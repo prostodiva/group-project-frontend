@@ -1,9 +1,11 @@
 import { useState } from "react";
-import "../style/trip.css";
-import Input from "../components/Input";
+import { useNavigate } from "react-router-dom";
 import { fetchCityData } from "../apis/cityApis";
+import Input from "../components/Input";
+import "../style/trip.css";
 
 const TripPage = () => {
+  const navigate = useNavigate();
   const [selectedCity, setSelectedCity] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [cityData, setCityData] = useState(null);
@@ -14,7 +16,14 @@ const TripPage = () => {
     
     try {
       const data = await fetchCityData(cityId);
-      setCityData(data);
+       setCityData(data);
+       navigate("/dashboard", { 
+        state: { 
+          selectedCity: city, 
+          cityId: cityId, 
+          cityData: data 
+        } 
+      });
     } catch (error) {
       console.error(`Error fetching ${city} data:`, error);
     } finally {
