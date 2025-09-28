@@ -8,12 +8,12 @@ export default defineConfig({
     port:5174,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'https://probable-goldfish-r44rj44rp596hq4j-3001.app.github.dev',
         changeOrigin: true,
         secure: false,
       },
       '/search': {  // Add this proxy rule
-        target: 'http://localhost:3001',
+        target: 'https://probable-goldfish-r44rj44rp596hq4j-3001.app.github.dev',
         changeOrigin: true,
         secure: false,
       }

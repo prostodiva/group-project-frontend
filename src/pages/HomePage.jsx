@@ -21,7 +21,9 @@ const HomePage = () => {
         await citiesAPI.checkHealth();
         const data = await citiesAPI.getAllCitiesWithFood();
         
-        if (data && data.cities) {
+        if (data && Array.isArray(data) && data.length > 0) {
+          setCities(data);
+        } else if (data && data.cities && Array.isArray(data.cities)) {
           setCities(data.cities);
         } else {
           setError('No cities data received from server');

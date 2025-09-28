@@ -10,7 +10,7 @@ export const citiesAPI = {
   },
   
   getAllCitiesWithFood: async () => {
-    const response = await fetch('/api/cities/food');
+    const response = await fetch('/api/cities');
     if (!response.ok) {
       throw new Error(`Failed to fetch cities: ${response.status} ${response.statusText}`);
     }
@@ -18,7 +18,7 @@ export const citiesAPI = {
   },
   
   getCityFood: async (cityId) => {
-    const response = await fetch(`/api/cities/${cityId}/food`);
+    const response = await fetch(`/api/cities/${cityId}/foods`);
     if (!response.ok) {
       throw new Error(`Failed to fetch city food: ${response.status} ${response.statusText}`);
     }
@@ -29,7 +29,7 @@ export const citiesAPI = {
 // Single API function that fetches city data by ID
   export const fetchCityData = async (cityId) => {
     try {
-      const response = await fetch(`/api/cities/${cityId}/food`);
+      const response = await fetch(`/api/cities/${cityId}/foods`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
