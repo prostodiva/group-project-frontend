@@ -1,41 +1,32 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-<<<<<<< HEAD
-=======
 import { tripAPI, TripTypes } from "../apis/tripApi";
->>>>>>> upstream/main
 import Input from "../components/Input";
 import "../style/trip.css";
 
+// TripPage: lets the user choose a type of trip, configure parameters, then plans it via backend API.
 const TripPage = () => {
   const navigate = useNavigate();
-<<<<<<< HEAD
-  const [selectedCity, setSelectedCity] = useState(null);
-
-  const handleCitySelect = (city, cityId) => {
-    setSelectedCity(city);
-    
-    // Navigate to CreateTripPage with selected starting city info
-    navigate("/create-trip", { 
-      state: { 
-        startingCity: city, 
-        startingCityId: cityId
-      } 
-    });
-=======
   const [selectedTripType, setSelectedTripType] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [numberOfCities, setNumberOfCities] = useState('');
-  const [customStartCity, setCustomStartCity] = useState('');
+  const [numberOfCities, setNumberOfCities] = useState("");
+  const [customStartCity, setCustomStartCity] = useState("");
   const [selectedCities, setSelectedCities] = useState([]);
-  const [availableCities] = useState([
-    'Paris', 'London', 'Berlin', 'Rome', 'Madrid', 'Amsterdam', 
-    'Vienna', 'Prague', 'Budapest', 'Warsaw', 'Stockholm'
-  ]);
+  const availableCities = [
+    "Paris",
+    "London",
+    "Berlin",
+    "Rome",
+    "Madrid",
+    "Amsterdam",
+    "Vienna",
+    "Prague",
+    "Budapest",
+    "Warsaw",
+    "Stockholm",
+  ];
 
-  const handleTripTypeSelect = (tripType) => {
-    setSelectedTripType(tripType);
-  };
+  const handleTripTypeSelect = (tripType) => setSelectedTripType(tripType);
 
   const handleParisTour = async () => {
     setIsLoading(true);
@@ -54,29 +45,28 @@ const TripPage = () => {
     } finally {
       setIsLoading(false);
     }
->>>>>>> upstream/main
   };
 
   const handleLondonTour = async () => {
-    if (!numberOfCities || numberOfCities < 1 || numberOfCities > 11) {
-      alert('Please enter a valid number of cities (1-11)');
+    const count = parseInt(numberOfCities, 10);
+    if (!count || count < 1 || count > 11) {
+      alert("Please enter a valid number of cities (1-11)");
       return;
     }
-    
     setIsLoading(true);
     try {
-      const tripData = await tripAPI.planLondonTour(parseInt(numberOfCities));
-      navigate("/dashboard", { 
-        state: { 
+      const tripData = await tripAPI.planLondonTour(count);
+      navigate("/dashboard", {
+        state: {
           tripType: TripTypes.LONDON_TOUR,
-          tripData: tripData,
-          numberOfCities: numberOfCities,
-          description: `London Tour - Visit ${numberOfCities} cities starting from London`,
-        } 
+          tripData,
+          numberOfCities: count,
+          description: `London Tour - Visit ${count} cities starting from London`,
+        },
       });
     } catch (error) {
-      console.error('Error planning London tour:', error);
-      alert('Failed to plan London tour. Please try again.');
+      console.error("Error planning London tour:", error);
+      alert("Failed to plan London tour. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -132,67 +122,43 @@ const TripPage = () => {
   };
 
   const toggleCitySelection = (city) => {
-    setSelectedCities(prev => 
-      prev.includes(city) 
-        ? prev.filter(c => c !== city)
-        : [...prev, city]
+    setSelectedCities((prev) =>
+      prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city]
     );
   };
 
   return (
     <div className="container">
       <div id="text">Choose Your European Vacation Plan</div>
-      
-<<<<<<< HEAD
-      {cities.map((city) => (
-        <Input
-          key={city.name}
-          className={city.className}
-          type="button"
-          value={city.name}
-          onClick={() => handleCitySelect(city.name, city.id)}
-        />
-      ))}
-      
-      <Input
-        className="custom-button"
-        type="button"
-        value="Custom"
-        onClick={handleCustomCity}
-      />
-=======
       {isLoading && <div className="loading">Planning your trip...</div>}
-      
+
       {!selectedTripType && (
         <div className="trip-options">
           <Input
             className="paris-button"
             type="button"
-            value="Paris"
+            value="Paris Tour"
             onClick={() => handleTripTypeSelect(TripTypes.PARIS_TOUR)}
             disabled={isLoading}
           />
-          
           <Input
             className="london-button"
             type="button"
-            value="London"
+            value="London Tour"
             onClick={() => handleTripTypeSelect(TripTypes.LONDON_TOUR)}
             disabled={isLoading}
           />
-
           <Input
             className="berlin-button"
             type="button"
-            value="Berlin"
+            value="Berlin Tour"
             onClick={() => handleTripTypeSelect(TripTypes.BERLIN_TOUR)}
             disabled={isLoading}
           />
-          
           <Input
             className="custom-button"
             type="button"
-            value="Custom"
+            value="Custom Tour"
             onClick={() => handleTripTypeSelect(TripTypes.CUSTOM_TOUR)}
             disabled={isLoading}
           />
@@ -340,7 +306,6 @@ const TripPage = () => {
           </div>
         </div>
       )}
->>>>>>> upstream/main
     </div>
   );
 };
