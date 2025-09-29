@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 // Trip type constants to match backend enum// Trip type constants to match backend enum
+=======
+// Trip type constants to match backend enum
+>>>>>>> upstream/main
 export const TripTypes = {
   PARIS_TOUR: "paris_tour",
   LONDON_TOUR: "london_tour", 
@@ -134,4 +138,8 @@ export const fetchTripData = async (tripId) => {
     console.error('Trip API call failed:', error);
     throw error;
   }
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> upstream/main

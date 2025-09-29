@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
+import { FaChevronDown } from "react-icons/fa";
+import { Link } from "react-router-dom";
 import { citiesAPI } from "../apis/cityApis";
 import "../style/home.css";
-import { Link } from "react-router-dom";
-import { FaChevronDown } from "react-icons/fa";
 
 const HomePage = () => {
   const [cities, setCities] = useState([]);
@@ -143,7 +143,16 @@ const HomePage = () => {
                     <ul style={{ listStyle: 'none', padding: 0 }}>
                       {cityFoods[city.id].map((food, index) => (
                         <li key={index} style={{ padding: '5px 0', borderBottom: '1px solid #ccc' }}>
-                          {typeof food === 'string' ? food : (food.name || food.title || JSON.stringify(food))}
+                          {typeof food === 'string' ? (
+                            food
+                          ) : (
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span>{food.name || food.title || food.foodName || 'Unknown Food'}</span>
+                              <span style={{ fontWeight: 'bold', color: '#2E7D32' }}>
+                                ${food.price || food.cost || food.amount || 'N/A'}
+                              </span>
+                            </div>
+                          )}
                         </li>
                       ))}
                     </ul>
