@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { FaChevronDown } from "react-icons/fa";
 import { useLocation } from "react-router-dom";
 import { citiesAPI } from "../apis/cityApis";
+import { TripTypes } from "../apis/tripApi";
 import "../style/dashboard.css";
 
 function DashboardPage() {
