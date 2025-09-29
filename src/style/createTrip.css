@@ -1,0 +1,142 @@
+body {
+  justify-content: space-evenly;
+  padding: 0px 50px;
+}
+
+/* List headers - list of cities / my list */
+.header {
+  font-size: 25px;
+  font-family: var(--title-font);
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-shadow: var(--text-shadow);
+  color: var(--dark-brown);
+  margin-bottom: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* List of Cities - left side background */
+#leftBG {
+  background-color: var(--background);
+  padding: 20px 30px;
+  border-width: 0px 15px;
+  border-style: double;
+  display: flex;
+  flex-direction: column;
+  border-color: var(--dark-brown);
+  min-width: 200px;
+  max-width: 600px;
+  height: 100vh;
+}
+
+/* left side - list of cities - scrollable */
+#cities-result {
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+    justify-content: center;
+}
+
+/* Right side container - holding title, selected cities and submit button */
+#rightContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 200px;
+  margin: 0px 50px;
+}
+
+/* Selected cities result box */
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0px 0px 10px;
+  padding: 15px;
+}
+
+/* Create my trip button */
+#submit {
+  border: var(--border-style);
+  background-color: var(--secondary-brown);
+  border-radius: var(--border-radius);
+  color: var(--default-text-color);
+  padding: 10px 15px;
+  text-align: left;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  cursor: pointer;
+  font-family: var(--body-font);
+  align-self: end;
+}
+
+/* City name box styling */
+.city-row, .selected-city-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+  margin: 5px;
+  background-color: var(--secondary-brown);
+  border: var(--border-style);
+  box-shadow: var(--box-shadow);
+  border-radius: var(--border-radius);
+  color: var(--default-text-color);
+}
+
+/* Plus button and minus button styling */
+.city-row button, .selected-city-row .minus-btn {
+  background-color: var(--primary-brown);
+  color: var(--default-text-color);
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+/* Ensure React Icons (SVG) are visible and properly sized */
+.city-row button svg, .selected-city-row .minus-btn svg {
+  width: 14px;
+  height: 14px;
+  color: currentColor;
+  fill: currentColor;
+}
+
+/* plus button hover */
+.city-row button:hover {
+  background-color: #45a049;
+}
+
+/* minus button hover */
+.selected-city-row .minus-btn:hover {
+  background-color: #da190b;
+}
+
+/* Number indicator in selected cities */
+.selected-city-row .number {
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+/* City name in selected cities */
+.selected-city-row .city-name {
+  flex: 1;
+}
+
+/* Drag states */
+.selected-city-row.dragging {
+  opacity: 0.5;
+}
