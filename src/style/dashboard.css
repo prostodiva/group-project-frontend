@@ -37,29 +37,85 @@ body {
   margin: 0px 50px;
 }
 
-/* Selected cities result box */
-.container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  margin: 0px 0px 10px;
+/* Trip summary container - matches CreateTrip styling */
+.trip-summary {
+  background-color: var(--background);
   padding: 15px;
+  border-radius: 15px;
+  box-shadow: var(--box-shadow);
+  border: var(--border-style);
+  margin-bottom: 15px;
+  flex-shrink: 0;
 }
 
-/* Create my trip button */
-#submit {
+/* Cities route container - matches CreateTrip scrollable styling */
+.cities-route-container {
+  padding: 5px;
+  overflow-y: auto;
+  max-height: 400px;
+  flex: 1;
+}
+
+/* Scrollbar for cities route container */
+.cities-route-container::-webkit-scrollbar { width: 6px; }
+.cities-route-container::-webkit-scrollbar-track { background: var(--background); border-radius: 4px; }
+.cities-route-container::-webkit-scrollbar-thumb { background: var(--secondary-brown); border-radius: 4px; }
+.cities-route-container::-webkit-scrollbar-thumb:hover { background: var(--primary-brown); }
+
+/* Selected food items container - matches CreateTrip styling */
+.selected-cities-scroll-container {
+  background-color: var(--background);
+  border-radius: 15px;
+  box-shadow: var(--box-shadow);
   border: var(--border-style);
-  background-color: var(--secondary-brown);
-  border-radius: var(--border-radius);
+  padding: 15px;
+  overflow-y: auto;
+  max-height: 300px;
+  flex: 1;
+  margin: 10px 0px;
+}
+
+/* Scrollbar for selected food items container */
+.selected-cities-scroll-container::-webkit-scrollbar { width: 6px; }
+.selected-cities-scroll-container::-webkit-scrollbar-track { background: var(--background); border-radius: 4px; }
+.selected-cities-scroll-container::-webkit-scrollbar-thumb { background: var(--secondary-brown); border-radius: 4px; }
+.selected-cities-scroll-container::-webkit-scrollbar-thumb:hover { background: var(--primary-brown); }
+
+/* Food styling to match HomePage */
+.food-name {
+  padding: 5px 0;
+  border-bottom: 1px solid #ccc;
+}
+
+.food-price {
+  font-weight: bold;
+  color: var(--primary-brown);
+}
+
+/* Food add button styling - matches CreateTrip page buttons */
+.food-button {
+  background-color: var(--primary-brown);
   color: var(--default-text-color);
-  padding: 10px 15px;
-  text-align: left;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 16px;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   cursor: pointer;
-  font-family: var(--body-font);
-  align-self: end;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex-shrink: 0;
+  padding: 0;
+  margin-left: 10px;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+/* Food button hover effect - matches CreateTrip page */
+.food-button:hover {
+  background-color: #45a049;
 }
 
 /* City name box styling */
@@ -81,8 +137,8 @@ body {
   background-color: var(--primary-brown);
   color: var(--default-text-color);
   border: none;
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
