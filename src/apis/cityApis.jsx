@@ -58,86 +58,201 @@ const calculateRouteDistances = (cities) => {
   return result;
 };
 
+// Mock cities data with coordinates for testing
+const mockCitiesData = {
+  cities: [
+    {
+      id: 1,
+      name: "Paris",
+      latitude: 48.8566,
+      longitude: 2.3522,
+      food: [
+        { name: "Croissant", price: 3.50 },
+        { name: "Baguette", price: 2.00 },
+        { name: "Macaron", price: 2.50 }
+      ]
+    },
+    {
+      id: 2,
+      name: "London",
+      latitude: 51.5074,
+      longitude: -0.1278,
+      food: [
+        { name: "Fish and Chips", price: 8.50 },
+        { name: "Bangers and Mash", price: 7.00 },
+        { name: "Shepherd's Pie", price: 9.00 }
+      ]
+    },
+    {
+      id: 3,
+      name: "Berlin",
+      latitude: 52.5200,
+      longitude: 13.4050,
+      food: [
+        { name: "Bratwurst", price: 4.50 },
+        { name: "Sauerkraut", price: 3.00 },
+        { name: "Pretzel", price: 2.50 }
+      ]
+    },
+    {
+      id: 4,
+      name: "Rome",
+      latitude: 41.9028,
+      longitude: 12.4964,
+      food: [
+        { name: "Pizza Margherita", price: 12.00 },
+        { name: "Pasta Carbonara", price: 14.00 },
+        { name: "Gelato", price: 4.50 }
+      ]
+    },
+    {
+      id: 5,
+      name: "Madrid",
+      latitude: 40.4168,
+      longitude: -3.7038,
+      food: [
+        { name: "Paella", price: 16.00 },
+        { name: "Tapas", price: 6.00 },
+        { name: "Churros", price: 3.50 }
+      ]
+    },
+    {
+      id: 6,
+      name: "Amsterdam",
+      latitude: 52.3676,
+      longitude: 4.9041,
+      food: [
+        { name: "Stroopwafel", price: 2.50 },
+        { name: "Dutch Cheese", price: 8.00 },
+        { name: "Herring", price: 5.50 }
+      ]
+    },
+    {
+      id: 7,
+      name: "Brussels",
+      latitude: 50.8503,
+      longitude: 4.3517,
+      food: [
+        { name: "Belgian Waffle", price: 4.00 },
+        { name: "Chocolate", price: 6.00 },
+        { name: "Frites", price: 3.50 }
+      ]
+    },
+    {
+      id: 8,
+      name: "Vienna",
+      latitude: 48.2082,
+      longitude: 16.3738,
+      food: [
+        { name: "Schnitzel", price: 12.00 },
+        { name: "Sachertorte", price: 5.50 },
+        { name: "Apfelstrudel", price: 4.50 }
+      ]
+    }
+  ]
+};
+
 export const citiesAPI = {
   checkHealth: async () => {
-    const response = await fetch('/health');
-    if (!response.ok) {
-      throw new Error(`Health check failed: ${response.status} ${response.statusText}`);
-    }
-    return await response.text();
+    // Mock health check - always returns OK for now
+    console.log('Mock health check - backend not connected');
+    return 'OK';
   },
 
-  // Get optimized route from backend
+  // Get optimized route from backend (mock implementation)
   getOptimizedRoute: async (tripParams) => {
-    const response = await fetch('/api/routes/optimize', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(tripParams)
-    });
+    console.log('Mock route optimization request:', tripParams);
     
-    if (!response.ok) {
-      throw new Error(`Failed to get optimized route: ${response.status} ${response.statusText}`);
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const { cities, startingCity } = tripParams;
+    
+    // Simple mock optimization using nearest neighbor
+    const optimizedRoute = [startingCity.name];
+    const distances = [];
+    let totalDistance = 0;
+    
+    let currentCity = startingCity;
+    const remainingCities = cities.filter(city => city.id !== startingCity.id);
+    
+    while (remainingCities.length > 0) {
+      let nearestCity = remainingCities[0];
+      let minDistance = calculateDistance(
+        currentCity.latitude || currentCity.lat,
+        currentCity.longitude || currentCity.lng || currentCity.lon,
+        nearestCity.latitude || nearestCity.lat,
+        nearestCity.longitude || nearestCity.lng || nearestCity.lon
+      );
+      
+      for (let i = 1; i < remainingCities.length; i++) {
+        const distance = calculateDistance(
+          currentCity.latitude || currentCity.lat,
+          currentCity.longitude || currentCity.lng || currentCity.lon,
+          remainingCities[i].latitude || remainingCities[i].lat,
+          remainingCities[i].longitude || remainingCities[i].lng || remainingCities[i].lon
+        );
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearestCity = remainingCities[i];
+        }
+      }
+      
+      optimizedRoute.push(nearestCity.name);
+      distances.push(Math.round(minDistance * 100) / 100);
+      totalDistance += minDistance;
+      
+      currentCity = nearestCity;
+      remainingCities.splice(remainingCities.indexOf(nearestCity), 1);
     }
     
-    const routeData = await response.json();
-    console.log('[citiesAPI.getOptimizedRoute] Received optimized route:', routeData);
-    return routeData;
+    const result = {
+      route: optimizedRoute,
+      cities: [startingCity, ...cities.filter(c => c.id !== startingCity.id)],
+      distances: distances,
+      totalDistance: Math.round(totalDistance * 100) / 100,
+      optimized: true,
+      optimizationSource: 'mock-backend',
+      method: "mock-nearest-neighbor"
+    };
+    
+    console.log('Mock optimization result:', result);
+    return result;
   },
   
   getAllCitiesWithFood: async () => {
-    const response = await fetch('/api/cities');
-    if (!response.ok) {
-      throw new Error(`Failed to fetch cities: ${response.status} ${response.statusText}`);
-    }
-    return await response.json();
+    console.log('Using mock cities data');
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 200));
+    return mockCitiesData;
   },
   
-  // Fetch food list for a city. Tries /foods first, then falls back to /food if 404.
+  // Fetch food list for a city from mock data
   getCityFood: async (cityId) => {
-    let endpointPlural = `/api/cities/${cityId}/foods`;
-    let endpointSingular = `/api/cities/${cityId}/food`;
-
-    let response = await fetch(endpointPlural);
-    if (response.status === 404) {
-      console.warn(`[citiesAPI.getCityFood] '${endpointPlural}' returned 404. Trying singular endpoint '${endpointSingular}'.`);
-      response = await fetch(endpointSingular);
+    console.log(`Getting food for city ID: ${cityId} from mock data`);
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Find city in mock data
+    const city = mockCitiesData.cities.find(c => c.id === parseInt(cityId));
+    if (city) {
+      console.log(`[citiesAPI.getCityFood] Found mock food for ${city.name}:`, city.food);
+      return city.food; // Return array directly for consistency
     }
-    if (!response.ok) {
-      throw new Error(`Failed to fetch city food: ${response.status} ${response.statusText}`);
-    }
-    const raw = await response.json();
-
-    // Normalize various possible shapes into an array of food objects/strings
-    let foods = [];
-    if (Array.isArray(raw)) {
-      foods = raw;
-    } else if (raw.foods && Array.isArray(raw.foods)) {
-      foods = raw.foods;
-    } else if (raw.food && Array.isArray(raw.food)) {
-      foods = raw.food;
-    } else if (raw.data && Array.isArray(raw.data)) {
-      foods = raw.data;
-    } else if (raw.items && Array.isArray(raw.items)) {
-      foods = raw.items;
-    }
-
-    console.log(`[citiesAPI.getCityFood] Normalized food list for city ${cityId}:`, foods);
-    return foods; // return already-normalized list to simplify caller
+    throw new Error(`City with ID ${cityId} not found in mock data`);
   }
 };
 
-// Single API function that fetches city data by ID
+// Single API function that fetches city data by ID from mock data
 export const fetchCityData = async (cityId) => {
   try {
-    // Reuse the same fallback logic by calling getCityFood; wrap result in object for legacy callers if any
+    // Use mock data version of getCityFood
     const foods = await citiesAPI.getCityFood(cityId);
     const data = { cityId, foods };
-    console.log(`Fetched data for city ID ${cityId}:`, data);
+    console.log(`Fetched mock data for city ID ${cityId}:`, data);
     return data;
   } catch (error) {
-    console.error('API call failed:', error);
+    console.error('Mock API call failed:', error);
     throw error;
   }
 };
