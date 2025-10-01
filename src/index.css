@@ -74,7 +74,7 @@ body {
 
 /* for sub-sub-headers 
   example: tour names */
-.sub-header {
+.sub-header, .trip-config h3 {
   font-size: 18px;
   font-family: var(--body-font);
   font-weight: bold;
@@ -121,7 +121,7 @@ body {
 
 /* Styling for the trip option buttons
   example: tour options, tour descriptions */
-.default-button{
+.default-button {
   border-radius: 10px;
   padding: 15px 25px;
   border: var(--border-style);
@@ -143,7 +143,7 @@ body {
 
 /* Second button style - lighter, smaller
   example: tour confirm buttons */
-.second-button{
+.second-button, .button-group [type="button"]{
   padding: 10px 10px;
   border: var(--border-style);
   color: var(--default-text-color);
@@ -154,8 +154,33 @@ body {
   transition: all 0.2s ease; 
 }
 
-.second-button:hover {
+.second-button:hover, .button-group [type="button"]:hover {
   background-color: var(--dark-brown);
   font-style: italic;
   color: var(--default-text-color);
+}
+
+/* Input field styling */
+input[type="number"] {
+  width: 100%;
+  padding: 5px 10px;
+  margin: 8px 0;
+  box-sizing: border-box;
+  border: var(--border-style);
+  border-radius: 4px;
+  font-size: 14px;
+  color: var(--dark-brown);
+}
+
+/* Cities list scroll container (CreateTripPage) - using class to avoid ID conflicts */
+.cities-list {
+  height: 70vh;
+  overflow-y: auto;
+  width: 100%;
+  padding: 8px 8px 20px 0;
+  margin: 0;
+  box-sizing: border-box;
+  display: block;
+  scrollbar-width: thin;
+  scrollbar-color: var(--secondary-brown) var(--background);
 }

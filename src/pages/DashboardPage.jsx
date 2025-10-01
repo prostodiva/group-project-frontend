@@ -95,13 +95,28 @@ function DashboardPage() {
             break;
 
           case TripTypes.CUSTOM_TOUR:
+            console.log('=== CUSTOM TOUR DEBUG ===');
+            console.log('tripData:', tripData);
+            console.log('tripData.route:', tripData?.route);
+            console.log('startingCity:', startingCity);
+            console.log('selectedCities:', selectedCities);
+            console.log('========================');
+            
             if (tripData?.route && Array.isArray(tripData.route)) {
               citiesToShow = tripData.route.map(routeCityName => 
                 allCitiesData.cities.find(city => 
                   city.name.toLowerCase() === routeCityName.toLowerCase()
                 )
               ).filter(Boolean);
-              console.log('Custom tour - using route from backend:', citiesToShow.map(c => c.name));
+              console.log('Custom tour - using route from tripData:', citiesToShow.map(c => c?.name));
+            } else if (selectedCities && Array.isArray(selectedCities)) {
+              // Use selectedCities directly (should be city names from CreateTripPage)
+              citiesToShow = selectedCities.map(cityName =>
+                allCitiesData.cities.find(city => 
+                  city.name.toLowerCase() === cityName.toLowerCase()
+                )
+              ).filter(Boolean);
+              console.log('Custom tour - using selectedCities:', citiesToShow.map(c => c?.name));
             } else if (startingCity && selectedCities) {
               const startCity = allCitiesData.cities.find(city => 
                 city.name.toLowerCase() === startingCity.toLowerCase()
@@ -113,8 +128,9 @@ function DashboardPage() {
               ).filter(Boolean);
               
               citiesToShow = [startCity, ...otherSelectedCities].filter(Boolean);
-              console.log('Custom tour fallback - manual selection:', citiesToShow.map(c => c.name));
+              console.log('Custom tour fallback - manual selection:', citiesToShow.map(c => c?.name));
             } else {
+              console.log('Custom tour - NO DATA FOUND, using default fallback');
               citiesToShow = allCitiesData.cities.slice(0, 5);
               console.log('Custom tour - default fallback');
             }

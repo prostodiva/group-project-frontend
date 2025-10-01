@@ -30,6 +30,7 @@ body {
     border-radius: 8px;
     border: 2px solid var(--dark-brown);
     margin-bottom: 20px;
+    color: var(--dark-brown);
 }
 
 .trip-ul {
@@ -46,7 +47,7 @@ body {
     font-weight: normal;
 }
 
-.back-button {
+.back-button, .button-group input:nth-child(2) {
     margin-left: auto;
 }
 

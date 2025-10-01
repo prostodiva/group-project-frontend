@@ -28,7 +28,14 @@ const TripPage = () => {
     "Stockholm",
   ]; // END availableCities
 
-  const handleTripTypeSelect = (tripType) => setSelectedTripType(tripType);
+  const handleTripTypeSelect = (tripType) => {
+    if (tripType === TripTypes.CUSTOM_TOUR) {
+      // Navigate to create trip page for custom tour
+      navigate("/create-trip");
+    } else {
+      setSelectedTripType(tripType);
+    }
+  };
 
   // Paris Tour Section
   const handleParisTour = async () => {
@@ -183,10 +190,7 @@ const TripPage = () => {
         <div className="trip-config">
           <h3 className="sub-header">Paris Tour Description</h3>
           <div className="trip-description">
-            <ul className="trip-ul">
-                <li>Starting Point: <span className="import-text">Paris</span> </li>
-                <li>Cities to Visit: <span className="import-text">All 11 European cities</span></li>
-            </ul>
+            Visit 11 European cities starting at Paris.
           </div>
           <div className="button-group">
             <Input
@@ -211,9 +215,9 @@ const TripPage = () => {
       { /* London Options */ }
       {selectedTripType === TripTypes.LONDON_TOUR && (
         <div className="trip-config">
-          <h3>London Tour Configuration</h3>
-          <div className="input-group">
-            <label>Number of cities to visit (including London):</label>
+          <h3>London Tour</h3>
+          <div className="input-group trip-description" style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <label>Visist cities near London. Enter number of cities to visit (including London):</label>
             <input
               type="number"
               min="1"
@@ -241,9 +245,11 @@ const TripPage = () => {
       )}
       { /* END London Options */ }
 
+      { /* Berlin Options */ }
       {selectedTripType === TripTypes.BERLIN_TOUR && (
         <div className="trip-config">
-          <h3>Berlin Tour Configuration</h3>
+          <h3>Berlin Tour</h3>
+          <div className="trip-description">Visist 13 European cities starting at Berlin.</div>
           <div className="button-group">
             <Input
               type="button"
@@ -260,8 +266,11 @@ const TripPage = () => {
           </div>
         </div>
       )}
+      { /* END Berlin Options */ }
 
-      {selectedTripType === TripTypes.CUSTOM_TOUR && (
+
+      { /* SCRAPPED - keeping incase we need to swtich - Custom Tour Options */ }
+      {/* {selectedTripType === TripTypes.CUSTOM_TOUR && (
         <div className="trip-config">
           <h3>Custom Tour Configuration</h3>
           <div className="input-group">
@@ -310,7 +319,9 @@ const TripPage = () => {
             />
           </div>
         </div>
-      )}
+      )} */}
+      { /* END Custom Tour Options */ }
+
     </div>
   ); // END display
 

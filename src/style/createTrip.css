@@ -25,28 +25,48 @@ body {
   display: flex;
   flex-direction: column;
   border-color: var(--dark-brown);
-  min-width: 200px;
-  max-width: 600px;
+  min-width: 40vh;
   height: 100vh;
 }
+
+/* WebKit scrollbar styling for cities list */
+#leftBG .cities-list::-webkit-scrollbar { width: 8px; }
+#leftBG .cities-list::-webkit-scrollbar-track { background: var(--background); border-radius: 6px; }
+#leftBG .cities-list::-webkit-scrollbar-thumb { background: var(--secondary-brown); border-radius: 6px; border: 1px solid var(--background); }
+#leftBG .cities-list::-webkit-scrollbar-thumb:hover { background: var(--primary-brown); }
 
 /* Right side container - holding title, selected cities and submit button */
 #rightContainer {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  max-width: 200px;
-  margin: 0px 50px;
+  width: 40vh;
+  padding: 0px 0px 0 10px;
 }
 
 /* Selected cities result box */
-.container {
+.create-trip-container {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  margin: 0px 0px 10px;
+  justify-content: flex-start; /* align to top instead of center */
   padding: 15px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin: 10px 0px;
+  background-color:var(--background);
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: var(--box-shadow);
+  border: var(--border-style);
 }
+
+/* Scrollbar for selected cities container */
+.create-trip-container::-webkit-scrollbar { width: 6px; }
+.create-trip-container::-webkit-scrollbar-track { background: var(--background); border-radius: 4px; }
+.create-trip-container::-webkit-scrollbar-thumb { background: var(--secondary-brown); border-radius: 4px; }
+.create-trip-container::-webkit-scrollbar-thumb:hover { background: var(--primary-brown); }
 
 /* Create my trip button */
 #submit {
