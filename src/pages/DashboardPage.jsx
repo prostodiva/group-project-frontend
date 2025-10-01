@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { FaChevronDown } from "react-icons/fa";
 import { useLocation } from "react-router-dom";
 import { citiesAPI } from "../apis/cityApis";
@@ -7,6 +8,7 @@ import "../style/dashboard.css";
 
 function DashboardPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { tripType, tripData, description, numberOfCities, startingCity, selectedCities, algorithmInfo } = location.state || {};
   
   const [tripCities, setTripCities] = useState([]);
@@ -156,6 +158,18 @@ function DashboardPage() {
     fetchTripCities();
   }, [tripData, tripType, numberOfCities, startingCity, selectedCities]);
 
+  const handleSubmit = () => {
+  navigate("/summary", {
+    state: {
+      tripType,
+      tripData, 
+      totalDistance,
+      selectedFoodItems, 
+      totalFoodCost: totalCost.toFixed(2)
+    }
+  });
+}
+
   // Handle city click to expand/collapse and fetch food data
   const handleCityClick = async (city) => {
     try {
@@ -247,6 +261,18 @@ function DashboardPage() {
       default:
         return "European Tour";
     }
+  };
+
+    const getCitySpendingBreakdown = () => {
+    const cityTotals = {};
+    selectedFoodItems.forEach(item => {
+      if (cityTotals[item.cityName]) {
+        cityTotals[item.cityName] += item.price;
+      } else {
+        cityTotals[item.cityName] = item.price;
+      }
+    });
+    return cityTotals;
   };
 
   // Enhanced helper function to get total distance from different possible data structures
@@ -508,17 +534,26 @@ function DashboardPage() {
           <p style={{ margin: '5px 0'}}>
             <strong>Cities in Route:</strong> {tripCities.length}
           </p>
+          {/* City Spending Breakdown */}
+          {selectedFoodItems.length > 0 && (
+            <div style={{ marginTop: '10px' }}>
+              <p style={{ margin: '5px 0', fontWeight: 'bold' }}>Spending by City:</p>
+              {Object.entries(getCitySpendingBreakdown()).map(([cityName, amount]) => (
+                <p key={cityName} style={{ 
+                  margin: '3px 0', 
+                  fontSize: '14px',
+                  paddingLeft: '10px'
+                }}>
+                  <strong>{cityName}:</strong> ${amount.toFixed(2)}
+                </p>
+              ))}
+            </div>
+          )}
         </div>
         
-        <button 
+                <button 
           id="submit" 
-          onClick={() => console.log('Trip finalized!', { 
-            tripType,
-            tripData, 
-            totalDistance,
-            selectedFoodItems, 
-            totalFoodCost: totalCost.toFixed(2) 
-          })}
+          onClick={handleSubmit}
         >
           Finalize Trip
           <div style={{ fontSize: '12px', marginTop: '5px' }}>
