@@ -13,6 +13,7 @@ const HomePage = () => {
   const [loadingFood, setLoadingFood] = useState(new Set());
 
   useEffect(() => {
+    // RETRIVING DATA
     const loadCities = async () => {
       try {
         setLoading(true);
@@ -34,11 +35,13 @@ const HomePage = () => {
       } finally {
         setLoading(false);
       }
-    };
+    }; // END loadCities
 
     loadCities();
-  }, []);
+  }, []); // END useEffect
 
+
+  // City Button
   const handleCityClick = async (city) => {
     try {
       // Toggle expanded state
@@ -52,30 +55,20 @@ const HomePage = () => {
         if (!cityFoods[city.id]) {
           setLoadingFood(prev => new Set(prev).add(city.id));
           console.log(`Fetching food for city ${city.id}...`);
-          
-          const foodData = await citiesAPI.getCityFood(city.id);
-          console.log(`Food data for city ${city.id}:`, foodData);
-          
-          // Handle different possible data structures
-          let foods = [];
-          if (Array.isArray(foodData)) {
-            foods = foodData;
-          } else if (foodData.foods && Array.isArray(foodData.foods)) {
-            foods = foodData.foods;
-          } else if (foodData.food && Array.isArray(foodData.food)) {
-            foods = foodData.food;
-          } else if (foodData.data && Array.isArray(foodData.data)) {
-            foods = foodData.data;
-          }
-          
+
+          const foods = await citiesAPI.getCityFood(city.id); // already normalized array
+          console.log(`Food data (normalized) for city ${city.id}:`, foods);
+
           setCityFoods(prev => ({
             ...prev,
             [city.id]: foods
           }));
         }
-      }
+      } // END else
       setExpandedCities(newExpandedCities);
-    } catch (err) {
+    } // END try
+    
+    catch (err) {
       console.error('Failed to fetch city food:', err);
       setError(`Failed to load food for ${city.name}: ${err.message}`);
     } finally {
@@ -85,8 +78,9 @@ const HomePage = () => {
         return newSet;
       });
     }
-  };
+  }; // END handleCityClick
 
+  // LOADING MESSAGE
   if (loading) {
     return (
       <div id="container">
@@ -95,8 +89,10 @@ const HomePage = () => {
         </div>
       </div>
     );
-  }
+  } // END loading
 
+
+  // ERROR MESSAGE
   if (error) {
     return (
       <div id="container">
@@ -105,67 +101,79 @@ const HomePage = () => {
         </div>
       </div>
     );
-  }
+  } // END error
 
+
+  // DISPLAY CODE
   return (
     <div id="container">
+
+      {/* Header and Create Trip Link */}
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div id="title">List of Cities</div>
+        <div className="title" style={{ fontSize: '35px' }}>List of Cities</div>
         <Link id="trip" to="/trip">create my trip</Link>
       </div>
       
-      <div id="cities-result" style={{ overflow: 'auto', maxHeight: '600px', width: '100%' }}>
+  <div id="home-cities-list">
+        {/* No Cities Message */}
         {cities.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '20px' }}>
             No cities available
           </div>
         ) : (
           cities.map((city) => (
+
+            //<City key={city.id} city={city} />
             <div key={city.id}>
+              { /* Button functionality */ }
               <button 
                 style={{ display: 'flex' }}
                 onClick={() => handleCityClick(city)}
                 aria-expanded={expandedCities.has(city.id)}
                 aria-label={`${expandedCities.has(city.id) ? 'Collapse' : 'Expand'} food options for ${city.name}`}
               >
-                <FaChevronDown 
-                  aria-hidden="true"
-                />
-                <span style={{ display: 'block', flex: '1' }}>{city.name}</span>
+                <FaChevronDown aria-hidden="true" />
+                <span style={{ display: 'block', flex: '1', marginLeft: '5px' }}>{city.name}</span>
               </button>
-              
+              { /* END Button functionality */ }
+
+              { /* Display food options if expanded */ }
               {expandedCities.has(city.id) && (
-                <div style={{ paddingLeft: '20px', marginBottom: '10px' }}>
-                  <h4 className="header">Food Options:</h4>
+                <div className="food-container">
                   {loadingFood.has(city.id) ? (
                     <p style={{ color: '#666', fontStyle: 'italic' }}>Loading food...</p>
                   ) : cityFoods[city.id] && cityFoods[city.id].length > 0 ? (
+
+                    // FOOD LIST
                     <ul style={{ listStyle: 'none', padding: 0 }}>
                       {cityFoods[city.id].map((food, index) => (
-                        <li key={index} style={{ padding: '5px 0', borderBottom: '1px solid #ccc' }}>
+                        <li key={index} className="food-name">
                           {typeof food === 'string' ? (
                             food
                           ) : (
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <span>{food.name || food.title || food.foodName || 'Unknown Food'}</span>
-                              <span style={{ fontWeight: 'bold', color: '#2E7D32' }}>
-                                ${food.price || food.cost || food.amount || 'N/A'}
-                              </span>
+                              <span className="food-price">${food.price || food.cost || food.amount || 'N/A'}</span>
                             </div>
                           )}
                         </li>
                       ))}
                     </ul>
+                    // END FOOD LIST
+
                   ) : (
                     <p style={{ color: '#666', fontStyle: 'italic' }}>No food options available</p>
                   )}
                 </div>
               )}
-            </div>
-          ))
+              { /* END Display food options if expanded */ }
+
+            </div> // END key={city.id}
+
+          )) // END cities.map
         )}
-      </div>
-    </div>
+  </div> {/* END home-cities-list */}
+    </div> /* END container */
   );
 };
 

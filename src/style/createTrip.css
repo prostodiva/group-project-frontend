@@ -30,18 +30,6 @@ body {
   height: 100vh;
 }
 
-/* left side - list of cities - scrollable */
-#cities-result {
-    max-height: calc(100vh - 150px);
-    overflow-y: auto;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    flex: 1;
-    justify-content: center;
-}
-
 /* Right side container - holding title, selected cities and submit button */
 #rightContainer {
   display: flex;

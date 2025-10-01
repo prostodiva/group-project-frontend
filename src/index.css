@@ -12,9 +12,10 @@
   --primary-brown: #9c7e70;              /* main colors: headers, city boxes */
   --secondary-brown: #c3b1a5;            /* buttons, highlights */
   --dark-brown: #725245;                 /* titles, borders */
-  --default-text-color: #ffffff;         /* text color - off white */
+  --default-text-color: #fdf8ff;         /* text color - off white */
   --box-shadow-color: rgba(114, 82, 69, 0.5);
   --text-shadow-color: #c3b1a5;
+  --text-default: #fff4ec;
   
   /* Font variables */
   --title-font: 'Brush Script MT', cursive;
@@ -60,4 +61,101 @@ body {
   box-shadow: var(--box-shadow);
   width: 350px;
   border: var(--border-style);
+}
+
+/* for sub-headers 
+  example: food options*/
+.header {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 10px 0;
+  color: var(--primary-brown);
+}
+
+/* for sub-sub-headers 
+  example: tour names */
+.sub-header {
+  font-size: 18px;
+  font-family: var(--body-font);
+  font-weight: bold;
+  font-style: italic;
+  letter-spacing: 1px;
+  margin: 15px 0px 5px;
+  color: var(--primary-brown);
+}
+
+/* list of cities - scrollable */
+#cities-result {
+  max-height: calc(100vh - 150px);
+  overflow-y: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 5px 0px;
+  flex: 1;
+  justify-content: center;
+}
+
+/* Food container */
+.food-container {
+  padding: 0px 10px; 
+  margin: 0px 5px;
+}
+
+/* Food name */
+.food-name {
+  padding: 5px 0;
+  color: var(--dark-brown);
+  font-weight: bold;
+  font-style: italic;
+  border-bottom: 1px solid var(--secondary-brown);
+}
+
+.food-price {
+  font-weight: normal;
+  font-style: normal;
+  color: var(secondary-brown);
+}
+
+
+/* Styling for the trip option buttons
+  example: tour options, tour descriptions */
+.default-button{
+  border-radius: 10px;
+  padding: 15px 25px;
+  border: var(--border-style);
+  box-shadow: var(--box-shadow);
+  color: var(--default-text-color);
+  font-family: var(--body-font);
+  letter-spacing: 1px;
+  background-color: var(--secondary-brown);
+  cursor: pointer;
+  transition: all 0.2s ease; 
+}
+
+.default-button:hover {
+  background-color: var(--dark-brown);
+  font-style: italic;
+  color: var(--default-text-color);
+  border: 2px solid var(--primary-brown);
+}
+
+/* Second button style - lighter, smaller
+  example: tour confirm buttons */
+.second-button{
+  padding: 10px 10px;
+  border: var(--border-style);
+  color: var(--default-text-color);
+  font-family: var(--body-font);
+  letter-spacing: 1px;
+  background-color: var(--primary-brown);
+  cursor: pointer;
+  transition: all 0.2s ease; 
+}
+
+.second-button:hover {
+  background-color: var(--dark-brown);
+  font-style: italic;
+  color: var(--default-text-color);
 }
