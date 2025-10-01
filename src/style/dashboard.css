@@ -81,17 +81,11 @@ body {
 .selected-cities-scroll-container::-webkit-scrollbar-thumb { background: var(--secondary-brown); border-radius: 4px; }
 .selected-cities-scroll-container::-webkit-scrollbar-thumb:hover { background: var(--primary-brown); }
 
-/* Food styling to match HomePage */
-.food-name {
-  padding: 5px 0;
-  border-bottom: 1px solid #ccc;
+.dash-food-container {
+  display: flex;
+  padding: 0px 10px; 
+  margin: 0px 5px;
 }
-
-.food-price {
-  font-weight: bold;
-  color: var(--primary-brown);
-}
-
 /* Food add button styling - matches CreateTrip page buttons */
 .food-button {
   background-color: var(--primary-brown);
@@ -116,6 +110,18 @@ body {
 /* Food button hover effect - matches CreateTrip page */
 .food-button:hover {
   background-color: #45a049;
+}
+
+/* Food minus button specific styling */
+.food-minus-button {
+  background-color: var(--secondary-brown);
+  margin-left: 0;
+  margin-right: 5px;
+}
+
+/* Food minus button hover effect */
+.food-minus-button:hover {
+  background-color: #da190b;
 }
 
 /* City name box styling */

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaChevronDown } from "react-icons/fa";
+import { FaChevronDown, FaPlus, FaMinus } from "react-icons/fa";
 import { useLocation } from "react-router-dom";
 import { citiesAPI } from "../apis/cityApis";
 import { TripTypes } from "../apis/tripApi";
@@ -249,23 +249,76 @@ function DashboardPage() {
   };
 
   const addFoodItem = (cityName, food) => {
-    const newItem = {
-      id: Date.now(),
-      cityName,
-      foodName: food.name || food.title || food.foodName || 'Unknown Food',
-      price: parseFloat(food.price || food.cost || food.amount || 0)
-    };
-    setSelectedFoodItems(prev => [...prev, newItem]);
-    setTotalCost(prev => prev + newItem.price);
-  };
-
-  const removeFoodItem = (itemId) => {
-    const item = selectedFoodItems.find(item => item.id === itemId);
-    if (item) {
-      setSelectedFoodItems(prev => prev.filter(item => item.id !== itemId));
-      setTotalCost(prev => prev - item.price);
+    const foodKey = `${cityName}-${food.name}`;
+    const existingItem = selectedFoodItems.find(item => 
+      item.cityName === cityName && item.foodName === (food.name || food.title || food.foodName || 'Unknown Food')
+    );
+    
+    if (existingItem) {
+      // Increase quantity of existing item
+      setSelectedFoodItems(prev => prev.map(item => 
+        item.id === existingItem.id 
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      ));
+      setTotalCost(prev => prev + parseFloat(food.price || food.cost || food.amount || 0));
+    } else {
+      // Add new item with quantity 1
+      const newItem = {
+        id: Date.now(),
+        cityName,
+        foodName: food.name || food.title || food.foodName || 'Unknown Food',
+        price: parseFloat(food.price || food.cost || food.amount || 0),
+        quantity: 1
+      };
+      setSelectedFoodItems(prev => [...prev, newItem]);
+      setTotalCost(prev => prev + newItem.price);
     }
   };
+
+  const subtractFoodItem = (cityName, food) => {
+    const existingItem = selectedFoodItems.find(item => 
+      item.cityName === cityName && item.foodName === (food.name || food.title || food.foodName || 'Unknown Food')
+    );
+    
+    if (existingItem && existingItem.quantity > 0) {
+      if (existingItem.quantity === 1) {
+        // Remove item if quantity would become 0
+        setSelectedFoodItems(prev => prev.filter(item => item.id !== existingItem.id));
+      } else {
+        // Decrease quantity
+        setSelectedFoodItems(prev => prev.map(item => 
+          item.id === existingItem.id 
+            ? { ...item, quantity: item.quantity - 1 }
+            : item
+        ));
+      }
+      setTotalCost(prev => prev - parseFloat(food.price || food.cost || food.amount || 0));
+    }
+  };
+
+  const getFoodQuantity = (cityName, foodName) => {
+    const item = selectedFoodItems.find(item => 
+      item.cityName === cityName && item.foodName === foodName
+    );
+    return item ? item.quantity : 0;
+  };
+
+  // Calculate total cost based on quantities
+  const calculateTotalCost = () => {
+    return selectedFoodItems.reduce((total, item) => {
+      return total + (item.price * item.quantity);
+    }, 0);
+  };
+
+  // OLD REMOVE FUNCTION - BELONGS TO RITA'S OLD FOOD LIST
+  // const removeFoodItem = (itemId) => {
+  //   const item = selectedFoodItems.find(item => item.id === itemId);
+  //   if (item) {
+  //     setSelectedFoodItems(prev => prev.filter(item => item.id !== itemId));
+  //     setTotalCost(prev => prev - item.price);
+  //   }
+  // };
 
   // FUNCTION TO GET TRIP TYPE DISPLAY NAME
   const getTripTypeDisplay = () => {
@@ -332,31 +385,7 @@ function DashboardPage() {
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       {/* LEFT SIDE - TRIP DETAILS AND CITIES IN YOUR ROUTE */}
       <div id="leftBG" style={{ flex: '2' }}>
-        <div className="header">Your European Vacation Plan</div>
-        
-        {/* Trip Summary */}
-        <div className="trip-summary">
-          {/* Show trip-specific information */}
-          {tripType === TripTypes.LONDON_TOUR && (
-            <div style={{ backgroundColor: '#e3f2fd', padding: '10px', borderRadius: '5px', margin: '10px 0' }}>
-              <strong>🇬🇧 London Tour:</strong> Visiting {numberOfCities || 'selected number of'} cities starting from London
-            </div>
-          )}
-          
-          {tripType === TripTypes.CUSTOM_TOUR && startingCity && selectedCities && (
-            <div style={{ backgroundColor: '#f3e5f5', padding: '10px', borderRadius: '5px', margin: '10px 0' }}>
-              <strong>🎯 Custom Tour:</strong> Starting from {startingCity}, visiting: {selectedCities.join(', ')}
-            </div>
-          )}
-        </div>
-
-        {/* Cities in Your Trip Route with Food - Using CreateTrip container styling */}
-        <div className="header">
-          Cities in Your Trip Route 
-          <span style={{ fontSize: '14px', color: '#666', marginLeft: '10px' }}>
-            ({tripCities.length} cities - Click to view food options)
-          </span>
-        </div>
+        <div className="create-header">{getTripTypeDisplay()} Plan</div>
         
         {/* Apply CreateTrip container styling to cities section */}
         <div className="cities-route-container">
@@ -414,24 +443,42 @@ function DashboardPage() {
                             const foodPrice = parseFloat(food.price || food.cost || food.amount || 0);
                             
                             return (
-                              <li key={index} className="food-name" style={{ padding: '5px 0', borderBottom: '1px solid #ccc' }}>
+                              <li key={index} className="food-name">
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', flex: 1 }}>
                                     <span>{foodName}</span>
                                     <span className="food-price">${foodPrice.toFixed(2)}</span>
                                   </div>
-                                  <button 
-                                    onClick={() => addFoodItem(city.name, { name: foodName, price: foodPrice })}
-                                    className="food-button"
-                                    onMouseOver={(e) => {
-                                      e.target.style.backgroundColor = '#e9ecef';
-                                      e.target.style.borderColor = '#adb5bd';
-                                    }}
-                                    onMouseOut={(e) => {
-                                      e.target.style.backgroundColor = '#f8f9fa';
-                                      e.target.style.borderColor = '#dee2e6';
-                                    }}
-                                  > + </button>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {/* Plus button on the left */}
+                                    <button 
+                                      onClick={() => addFoodItem(city.name, { name: foodName, price: foodPrice })}
+                                      className="food-button"
+                                      title="Add one"
+                                    >
+                                      <FaPlus />
+                                    </button>
+                                    {/* Quantity display and minus button - only show when quantity > 0 */}
+                                    {getFoodQuantity(city.name, foodName) > 0 && (
+                                      <>
+                                        <span style={{ 
+                                          minWidth: '20px', 
+                                          textAlign: 'center', 
+                                          fontWeight: 'bold',
+                                          color: 'var(--primary-brown)'
+                                        }}>
+                                          {getFoodQuantity(city.name, foodName)}
+                                        </span>
+                                        <button 
+                                          onClick={() => subtractFoodItem(city.name, { name: foodName, price: foodPrice })}
+                                          className="food-button food-minus-button"
+                                          title="Remove one"
+                                        >
+                                          <FaMinus />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
                                 </div>
                               </li>
                             );
