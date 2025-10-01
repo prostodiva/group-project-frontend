@@ -9,7 +9,7 @@ button {
     text-decoration: none;
     display: inline-block;
     font-size: 16px;
-    margin: 10px 0px;
+    margin: 5px 0px;
     cursor: pointer;
     font-family: var(--body-font);
 }
@@ -45,3 +45,30 @@ button {
     font-family: var(--body-font);
     width: 30%;
 }
+
+/* Cities list scroll container (avoid clipping expanded food) */
+#home-cities-list {
+    max-height: 70vh;
+    overflow-y: auto;
+    width: 100%;
+    padding: 0px 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 10px;
+    box-sizing: border-box;
+    position: relative;
+    overscroll-behavior: contain; 
+}
+
+/* Scrollbar styling (Firefox) */
+#home-cities-list {
+    scrollbar-width: thin;
+    scrollbar-color: var(--secondary-brown) var(--background);
+}
+
+/* Scrollbar styling (WebKit) */
+#home-cities-list::-webkit-scrollbar { width: 10px; }
+#home-cities-list::-webkit-scrollbar-track { background: var(--background); border-radius: 8px; }
+#home-cities-list::-webkit-scrollbar-thumb { background: var(--secondary-brown); border-radius: 8px; border: 2px solid var(--background); }
+#home-cities-list::-webkit-scrollbar-thumb:hover { background: var(--primary-brown); }

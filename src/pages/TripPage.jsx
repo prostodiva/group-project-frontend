@@ -4,22 +4,40 @@ import { tripAPI, TripTypes } from "../apis/tripApi";
 import Input from "../components/Input";
 import "../style/trip.css";
 
+// Custom Tour City List
 const TripPage = () => {
   const navigate = useNavigate();
   const [selectedTripType, setSelectedTripType] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [numberOfCities, setNumberOfCities] = useState('');
-  const [customStartCity, setCustomStartCity] = useState('');
+  const [numberOfCities, setNumberOfCities] = useState("");
+  const [customStartCity, setCustomStartCity] = useState("");
   const [selectedCities, setSelectedCities] = useState([]);
-  const [availableCities] = useState([
-    'Paris', 'London', 'Berlin', 'Rome', 'Madrid', 'Amsterdam', 
-    'Vienna', 'Prague', 'Budapest', 'Warsaw', 'Stockholm'
-  ]);
+
+  // Custom Tour City List
+  const availableCities = [
+    "Paris",
+    "London",
+    "Berlin",
+    "Rome",
+    "Madrid",
+    "Amsterdam",
+    "Vienna",
+    "Prague",
+    "Budapest",
+    "Warsaw",
+    "Stockholm",
+  ]; // END availableCities
 
   const handleTripTypeSelect = (tripType) => {
-    setSelectedTripType(tripType);
+    if (tripType === TripTypes.CUSTOM_TOUR) {
+      // Navigate to create trip page for custom tour
+      navigate("/create-trip");
+    } else {
+      setSelectedTripType(tripType);
+    }
   };
 
+  // Paris Tour Section
   const handleParisTour = async () => {
     setIsLoading(true);
     try {
@@ -37,33 +55,37 @@ const TripPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }; // END handleParisTour
 
+
+  // London Tour Section
   const handleLondonTour = async () => {
-    if (!numberOfCities || numberOfCities < 1 || numberOfCities > 11) {
-      alert('Please enter a valid number of cities (1-11)');
+    const count = parseInt(numberOfCities, 10);
+    if (!count || count < 1 || count > 11) {
+      alert("Please enter a valid number of cities (1-11)");
       return;
     }
-    
     setIsLoading(true);
     try {
-      const tripData = await tripAPI.planLondonTour(parseInt(numberOfCities));
-      navigate("/dashboard", { 
-        state: { 
+      const tripData = await tripAPI.planLondonTour(count);
+      navigate("/dashboard", {
+        state: {
           tripType: TripTypes.LONDON_TOUR,
-          tripData: tripData,
-          numberOfCities: numberOfCities,
-          description: `London Tour - Visit ${numberOfCities} cities starting from London`,
-        } 
+          tripData,
+          numberOfCities: count,
+          description: `London Tour - Visit ${count} cities starting from London`,
+        },
       });
     } catch (error) {
-      console.error('Error planning London tour:', error);
-      alert('Failed to plan London tour. Please try again.');
+      console.error("Error planning London tour:", error);
+      alert("Failed to plan London tour. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  };
+  }; // END handleLondonTour
 
+
+  // Berlin Tour Section
   const handleBerlinTour = async () => {
     setIsLoading(true);
     try {
@@ -81,8 +103,10 @@ const TripPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }; // END handleBerlinTour
 
+  
+  // Custom Tour Section
   const handleCustomTour = async () => {
     if (!customStartCity) {
       alert('Please select a starting city');
@@ -111,90 +135,73 @@ const TripPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }; // END handleCustomTour
 
   const toggleCitySelection = (city) => {
-    setSelectedCities(prev => 
-      prev.includes(city) 
-        ? prev.filter(c => c !== city)
-        : [...prev, city]
+    setSelectedCities((prev) =>
+      prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city]
     );
   };
 
+  // DISPLAY 
   return (
     <div className="container">
-      <div id="text">Choose Your European Vacation Plan</div>
-      
+      <div className="title" style={{ fontSize: '35px' }}>Choose a Vacation Plan</div>
       {isLoading && <div className="loading">Planning your trip...</div>}
-      
+
+      { /* Trip Options */ }
       {!selectedTripType && (
         <div className="trip-options">
           <Input
-            className="paris-button"
+            className="default-button"
             type="button"
-            value="Paris"
+            value="Paris Tour"
             onClick={() => handleTripTypeSelect(TripTypes.PARIS_TOUR)}
             disabled={isLoading}
           />
-          
           <Input
-            className="london-button"
+            className="default-button"
             type="button"
-            value="London"
+            value="London Tour"
             onClick={() => handleTripTypeSelect(TripTypes.LONDON_TOUR)}
             disabled={isLoading}
           />
-
           <Input
-            className="berlin-button"
+            className="default-button"
             type="button"
-            value="Berlin"
+            value="Berlin Tour"
             onClick={() => handleTripTypeSelect(TripTypes.BERLIN_TOUR)}
             disabled={isLoading}
           />
-          
           <Input
-            className="custom-button"
+            className="default-button"
             type="button"
-            value="Custom"
+            value="Custom Tour"
             onClick={() => handleTripTypeSelect(TripTypes.CUSTOM_TOUR)}
             disabled={isLoading}
           />
         </div>
-      )}
+      )} 
+      { /* END Trip Options */ }
 
+
+      { /* Paris Options */ }
       {selectedTripType === TripTypes.PARIS_TOUR && (
         <div className="trip-config">
-          <h3>Paris Tour Configuration</h3>
-          <div style={{ 
-            backgroundColor: '#fff3e0', 
-            padding: '15px', 
-            borderRadius: '8px', 
-            border: '2px solid #ff9800',
-            marginBottom: '20px'
-          }}>
-            <h4 style={{ color: '#e65100', marginTop: '0' }}>🇫🇷 Complete European Tour</h4>
-            <ul style={{ marginBottom: '0', lineHeight: '1.6' }}>
-              <li><strong>Starting Point:</strong> Paris</li>
-              <li><strong>Cities to Visit:</strong> All 11 European cities</li>
-            </ul>
+          <h3 className="sub-header">Paris Tour Description</h3>
+          <div className="trip-description">
+            Visit 11 European cities starting at Paris.
           </div>
           <div className="button-group">
             <Input
+              className="second-button"
               type="button"
-              value="Start Paris Tour (All 11 Cities)"
+              value="Start Paris Tour"
               onClick={handleParisTour}
-              disabled={isLoading}
-              style={{ 
-                backgroundColor: '#4CAF50', 
-                color: 'white', 
-                padding: '12px 24px',
-                fontSize: '16px',
-                fontWeight: 'bold'
-              }}
-            />
+              disabled={isLoading} />
             <Input
               type="button"
+              className="second-button back-button"
               value="Back"
               onClick={() => setSelectedTripType(null)}
               disabled={isLoading}
@@ -202,12 +209,15 @@ const TripPage = () => {
           </div>
         </div>
       )}
+      { /* END Paris Options */ }
 
+
+      { /* London Options */ }
       {selectedTripType === TripTypes.LONDON_TOUR && (
         <div className="trip-config">
-          <h3>London Tour Configuration</h3>
-          <div className="input-group">
-            <label>Number of cities to visit (including London):</label>
+          <h3>London Tour</h3>
+          <div className="input-group trip-description" style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <label>Visist cities near London. Enter number of cities to visit (including London):</label>
             <input
               type="number"
               min="1"
@@ -233,10 +243,13 @@ const TripPage = () => {
           </div>
         </div>
       )}
+      { /* END London Options */ }
 
+      { /* Berlin Options */ }
       {selectedTripType === TripTypes.BERLIN_TOUR && (
         <div className="trip-config">
-          <h3>Berlin Tour Configuration</h3>
+          <h3>Berlin Tour</h3>
+          <div className="trip-description">Visist 13 European cities starting at Berlin.</div>
           <div className="button-group">
             <Input
               type="button"
@@ -253,8 +266,11 @@ const TripPage = () => {
           </div>
         </div>
       )}
+      { /* END Berlin Options */ }
 
-      {selectedTripType === TripTypes.CUSTOM_TOUR && (
+
+      { /* SCRAPPED - keeping incase we need to swtich - Custom Tour Options */ }
+      {/* {selectedTripType === TripTypes.CUSTOM_TOUR && (
         <div className="trip-config">
           <h3>Custom Tour Configuration</h3>
           <div className="input-group">
@@ -303,9 +319,12 @@ const TripPage = () => {
             />
           </div>
         </div>
-      )}
+      )} */}
+      { /* END Custom Tour Options */ }
+
     </div>
-  );
+  ); // END display
+
 };
 
 export default TripPage;

@@ -1,4 +1,3 @@
-// Trip type constants to match backend enum
 export const TripTypes = {
   PARIS_TOUR: "paris_tour",
   LONDON_TOUR: "london_tour", 
@@ -6,67 +5,63 @@ export const TripTypes = {
   BERLIN_TOUR: "berlin_tour"
 };
 
+// Internal helper to produce better diagnostics for missing backend endpoints.
+async function fetchWithDiagnostics(url, options, friendlyName) {
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    // Provide more context specifically for 404 (likely endpoint not implemented on backend)
+    if (response.status === 404) {
+      throw new Error(`${friendlyName} endpoint not found (404). Your backend does not implement '${url}'. Either:
+  1) Add this route to the backend
+  2) Update the frontend tripAPI to the correct path
+  3) Temporarily mock the response until backend work is done.`);
+    }
+    throw new Error(`${friendlyName} failed: ${response.status} ${response.statusText}`);
+  }
+  return response.json();
+}
+
 export const tripAPI = {
   // Plan Paris tour (all 11 cities starting from Paris)
   planParisTour: async () => {
-    const response = await fetch('/api/trips/paris');
-    if (!response.ok) {
-      throw new Error(`Failed to plan Paris tour: ${response.status} ${response.statusText}`);
-    }
-    return await response.json();
+    return fetchWithDiagnostics('/api/trips/paris', undefined, 'Plan Paris tour');
   },
 
   // Plan London tour with specified number of cities
   planLondonTour: async (numberOfCities) => {
-    const url = numberOfCities 
-      ? `/api/trips/london?cities=${numberOfCities}` 
+    const url = numberOfCities
+      ? `/api/trips/london?cities=${numberOfCities}`
       : '/api/trips/london';
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to plan London tour: ${response.status} ${response.statusText}`);
-    }
-    return await response.json();
+    return fetchWithDiagnostics(url, undefined, 'Plan London tour');
   },
 
   // Plan Berlin tour
   planBerlinTour: async () => {
-    const response = await fetch('/api/trips/berlin');
-    if (!response.ok) {
-      throw new Error(`Failed to plan Berlin tour: ${response.status} ${response.statusText}`);
-    }
-    return await response.json();
+    return fetchWithDiagnostics('/api/trips/berlin', undefined, 'Plan Berlin tour');
   },
 
   // Plan custom tour with selected cities
   planCustomTour: async (startingCity, selectedCities) => {
     const requestBody = {
-      startingCity: startingCity,
+      startingCity,
       cities: selectedCities,
-      tripType: TripTypes.CUSTOM_TOUR
+      tripType: TripTypes.CUSTOM_TOUR,
     };
-    
-    const response = await fetch('/api/trips/custom', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    return fetchWithDiagnostics(
+      '/api/trips/custom',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
       },
-      body: JSON.stringify(requestBody)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to plan custom tour: ${response.status} ${response.statusText}`);
-    }
-    return await response.json();
+      'Plan custom tour'
+    );
   },
 
   // Get trip details by ID
   getTripById: async (tripId) => {
-    const response = await fetch(`/api/trips/${tripId}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch trip details: ${response.status} ${response.statusText}`);
-    }
-    return await response.json();
-  }
+    return fetchWithDiagnostics(`/api/trips/${tripId}`, undefined, 'Get trip details');
+  },
 };
 
 // Enhanced city and food management APIs
@@ -133,5 +128,5 @@ export const fetchTripData = async (tripId) => {
   } catch (error) {
     console.error('Trip API call failed:', error);
     throw error;
-  }
+  };
 };

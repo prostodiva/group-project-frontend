@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
-import { FaChevronDown } from "react-icons/fa";
+import { FaChevronDown, FaPlus, FaMinus } from "react-icons/fa";
 import { useLocation } from "react-router-dom";
-import { citiesAPI } from "../apis/cityApis";
+import { citiesAPI, calculateRouteDistances } from "../apis/cityApis";
 import { TripTypes } from "../apis/tripApi";
 import "../style/dashboard.css";
 
 function DashboardPage() {
   const location = useLocation();
   const { tripType, tripData, description, numberOfCities, startingCity, selectedCities, algorithmInfo } = location.state || {};
-  
   const [tripCities, setTripCities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,6 +16,10 @@ function DashboardPage() {
   const [cityFoodData, setCityFoodData] = useState({});
   const [expandedCities, setExpandedCities] = useState(new Set()); // Track expanded cities
   const [loadingFood, setLoadingFood] = useState(new Set()); // Track cities loading food
+
+  // State for managing distance data
+  const [calculatedDistances, setCalculatedDistances] = useState(null);
+  const [calculatedTotalDistance, setCalculatedTotalDistance] = useState(null);
 
   // Debug: Log the trip data when component mounts
   useEffect(() => {
@@ -68,8 +71,16 @@ function DashboardPage() {
               ).filter(Boolean);
               console.log('Paris tour - using route from backend:', citiesToShow.map(c => c.name));
             } else {
-              citiesToShow = allCitiesData.cities;
-              console.log('Paris tour - fallback to all cities');
+              // Fallback: Ensure Paris is first, then add other cities
+              const parisCity = allCitiesData.cities.find(city => 
+                city.name.toLowerCase() === 'paris'
+              );
+              const otherCities = allCitiesData.cities.filter(city => 
+                city.name.toLowerCase() !== 'paris'
+              );
+              
+              citiesToShow = [parisCity, ...otherCities].filter(Boolean);
+              console.log('Paris tour - fallback with Paris first:', citiesToShow.map(c => c.name));
             }
             break;
 
@@ -95,13 +106,28 @@ function DashboardPage() {
             break;
 
           case TripTypes.CUSTOM_TOUR:
+            console.log('=== CUSTOM TOUR DEBUG ===');
+            console.log('tripData:', tripData);
+            console.log('tripData.route:', tripData?.route);
+            console.log('startingCity:', startingCity);
+            console.log('selectedCities:', selectedCities);
+            console.log('========================');
+            
             if (tripData?.route && Array.isArray(tripData.route)) {
               citiesToShow = tripData.route.map(routeCityName => 
                 allCitiesData.cities.find(city => 
                   city.name.toLowerCase() === routeCityName.toLowerCase()
                 )
               ).filter(Boolean);
-              console.log('Custom tour - using route from backend:', citiesToShow.map(c => c.name));
+              console.log('Custom tour - using route from tripData:', citiesToShow.map(c => c?.name));
+            } else if (selectedCities && Array.isArray(selectedCities)) {
+              // Use selectedCities directly (should be city names from CreateTripPage)
+              citiesToShow = selectedCities.map(cityName =>
+                allCitiesData.cities.find(city => 
+                  city.name.toLowerCase() === cityName.toLowerCase()
+                )
+              ).filter(Boolean);
+              console.log('Custom tour - using selectedCities:', citiesToShow.map(c => c?.name));
             } else if (startingCity && selectedCities) {
               const startCity = allCitiesData.cities.find(city => 
                 city.name.toLowerCase() === startingCity.toLowerCase()
@@ -113,8 +139,9 @@ function DashboardPage() {
               ).filter(Boolean);
               
               citiesToShow = [startCity, ...otherSelectedCities].filter(Boolean);
-              console.log('Custom tour fallback - manual selection:', citiesToShow.map(c => c.name));
+              console.log('Custom tour fallback - manual selection:', citiesToShow.map(c => c?.name));
             } else {
+              console.log('Custom tour - NO DATA FOUND, using default fallback');
               citiesToShow = allCitiesData.cities.slice(0, 5);
               console.log('Custom tour - default fallback');
             }
@@ -127,8 +154,18 @@ function DashboardPage() {
                   city.name.toLowerCase() === routeCityName.toLowerCase()
                 )
               ).filter(Boolean);
+              console.log('Berlin tour - using route from backend:', citiesToShow.map(c => c.name));
             } else {
-              citiesToShow = allCitiesData.cities;
+              // Fallback: Ensure Berlin is first, then add other cities
+              const berlinCity = allCitiesData.cities.find(city => 
+                city.name.toLowerCase() === 'berlin'
+              );
+              const otherCities = allCitiesData.cities.filter(city => 
+                city.name.toLowerCase() !== 'berlin'
+              );
+              
+              citiesToShow = [berlinCity, ...otherCities].filter(Boolean);
+              console.log('Berlin tour - fallback with Berlin first:', citiesToShow.map(c => c.name));
             }
             break;
 
@@ -144,6 +181,35 @@ function DashboardPage() {
         })));
         
         setTripCities(citiesToShow);
+
+        // Always calculate distances for accurate display
+        if (citiesToShow.length > 1) {
+          console.log('Calculating distances for dashboard display...');
+          const distanceData = calculateRouteDistances(citiesToShow);
+          console.log('Calculated dashboard distances:', distanceData);
+          
+          // Store calculated distances in state
+          setCalculatedDistances(distanceData.distances);
+          setCalculatedTotalDistance(distanceData.totalDistance);
+          
+          // Update the tripData with calculated distances if it exists
+          if (tripData) {
+            const updatedTripData = {
+              ...tripData,
+              distances: distanceData.distances,
+              totalDistance: distanceData.totalDistance
+            };
+            
+            // Update the location state to include distance data
+            window.history.replaceState(
+              { 
+                ...location.state, 
+                tripData: updatedTripData 
+              }, 
+              ''
+            );
+          }
+        }
 
       } catch (err) {
         console.error('Failed to fetch cities:', err);
@@ -216,24 +282,136 @@ function DashboardPage() {
   };
 
   const addFoodItem = (cityName, food) => {
-    const newItem = {
-      id: Date.now(),
-      cityName,
-      foodName: food.name || food.title || food.foodName || 'Unknown Food',
-      price: parseFloat(food.price || food.cost || food.amount || 0)
-    };
-    setSelectedFoodItems(prev => [...prev, newItem]);
-    setTotalCost(prev => prev + newItem.price);
-  };
-
-  const removeFoodItem = (itemId) => {
-    const item = selectedFoodItems.find(item => item.id === itemId);
-    if (item) {
-      setSelectedFoodItems(prev => prev.filter(item => item.id !== itemId));
-      setTotalCost(prev => prev - item.price);
+    const foodKey = `${cityName}-${food.name}`;
+    const existingItem = selectedFoodItems.find(item => 
+      item.cityName === cityName && item.foodName === (food.name || food.title || food.foodName || 'Unknown Food')
+    );
+    
+    if (existingItem) {
+      // Increase quantity of existing item
+      setSelectedFoodItems(prev => prev.map(item => 
+        item.id === existingItem.id 
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      ));
+      setTotalCost(prev => prev + parseFloat(food.price || food.cost || food.amount || 0));
+    } else {
+      // Add new item with quantity 1
+      const newItem = {
+        id: Date.now(),
+        cityName,
+        foodName: food.name || food.title || food.foodName || 'Unknown Food',
+        price: parseFloat(food.price || food.cost || food.amount || 0),
+        quantity: 1
+      };
+      setSelectedFoodItems(prev => [...prev, newItem]);
+      setTotalCost(prev => prev + newItem.price);
     }
   };
 
+  const subtractFoodItem = (cityName, food) => {
+    const existingItem = selectedFoodItems.find(item => 
+      item.cityName === cityName && item.foodName === (food.name || food.title || food.foodName || 'Unknown Food')
+    );
+    
+    if (existingItem && existingItem.quantity > 0) {
+      if (existingItem.quantity === 1) {
+        // Remove item if quantity would become 0
+        setSelectedFoodItems(prev => prev.filter(item => item.id !== existingItem.id));
+      } else {
+        // Decrease quantity
+        setSelectedFoodItems(prev => prev.map(item => 
+          item.id === existingItem.id 
+            ? { ...item, quantity: item.quantity - 1 }
+            : item
+        ));
+      }
+      setTotalCost(prev => prev - parseFloat(food.price || food.cost || food.amount || 0));
+    }
+  };
+
+  const getFoodQuantity = (cityName, foodName) => {
+    const item = selectedFoodItems.find(item => 
+      item.cityName === cityName && item.foodName === foodName
+    );
+    return item ? item.quantity : 0;
+  };
+
+  // Calculate total cost based on quantities
+  const calculateTotalCost = () => {
+    return selectedFoodItems.reduce((total, item) => {
+      return total + (item.price * item.quantity);
+    }, 0);
+  };
+
+  // Calculate total spent in a specific city
+  const getCityTotal = (cityName) => {
+    return selectedFoodItems
+      .filter(item => item.cityName === cityName)
+      .reduce((total, item) => {
+        return total + (item.price * item.quantity);
+      }, 0);
+  };
+
+  // Get distance from previous city
+  const getDistanceFromPrevious = (currentIndex) => {
+    if (currentIndex === 0) return null; // No distance for starting city
+    
+    // Use calculated distances from state first (most accurate)
+    if (calculatedDistances && Array.isArray(calculatedDistances)) {
+      return calculatedDistances[currentIndex - 1];
+    }
+    
+    // Check if tripData has individual distances (from backend optimization)
+    if (tripData?.distances && Array.isArray(tripData.distances)) {
+      return tripData.distances[currentIndex - 1];
+    }
+    
+    // Check if tripData has itinerary with distances
+    if (tripData?.itinerary && Array.isArray(tripData.itinerary)) {
+      const segment = tripData.itinerary[currentIndex - 1];
+      return segment?.distance || segment?.distanceKm || segment?.km;
+    }
+    
+    // Check if cities have distance property
+    const currentCity = tripCities[currentIndex];
+    if (currentCity?.distanceFromPrevious || currentCity?.distance) {
+      return currentCity.distanceFromPrevious || currentCity.distance;
+    }
+    
+    return null; // No distance data available
+  };
+
+  // Check if trip was optimized by backend
+  const isOptimizedTrip = () => {
+    return tripData?.optimized === true;
+  };
+
+  // Get optimization source info
+  const getOptimizationInfo = () => {
+    if (!tripData?.optimized) return null;
+    
+    const source = tripData.optimizationSource || 'unknown';
+    const sourceLabels = {
+      'backend': 'Backend Algorithm',
+      'local': 'Local Algorithm', 
+      'none': 'No Optimization',
+      'unknown': 'Optimized'
+    };
+    
+    return sourceLabels[source] || 'Optimized';
+  };
+
+  // OLD REMOVE FUNCTION - BELONGS TO RITA'S OLD FOOD LIST
+  // const removeFoodItem = (itemId) => {
+  //   const item = selectedFoodItems.find(item => item.id === itemId);
+  //   if (item) {
+  //     setSelectedFoodItems(prev => prev.filter(item => item.id !== itemId));
+  //     setTotalCost(prev => prev - item.price);
+  //   }
+  // };
+
+  // FUNCTION TO GET TRIP TYPE DISPLAY NAME
   const getTripTypeDisplay = () => {
     switch(tripType) {
       case TripTypes.PARIS_TOUR:
@@ -249,8 +427,15 @@ function DashboardPage() {
     }
   };
 
-  // Enhanced helper function to get total distance from different possible data structures
+  // Enhanced helper function to get total distance - prioritize calculated values
   const getTotalDistance = () => {
+    // Use calculated total distance from state first (most accurate)
+    if (calculatedTotalDistance !== null) {
+      console.log('Using calculated total distance:', calculatedTotalDistance);
+      return calculatedTotalDistance;
+    }
+    
+    // Fallback to tripData if no calculated distance available
     if (!tripData) return null;
     
     const distance = tripData.totalDistance || 
@@ -264,7 +449,7 @@ function DashboardPage() {
                     tripData.total_distance_km ||
                     null;
     
-    console.log('Found distance:', distance);
+    console.log('Using tripData distance:', distance);
     return distance;
   };
 
@@ -298,36 +483,10 @@ function DashboardPage() {
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       {/* LEFT SIDE - TRIP DETAILS AND CITIES IN YOUR ROUTE */}
       <div id="leftBG" style={{ flex: '2' }}>
-        <div className="header">Your European Vacation Plan</div>
+        <div className="create-header">{getTripTypeDisplay()} Plan</div>
         
-        {/* Trip Summary */}
-        <div className="trip-summary">
-      
-          
-          {/* Show trip-specific information */}
-          {tripType === TripTypes.LONDON_TOUR && (
-            <div style={{ backgroundColor: '#e3f2fd', padding: '10px', borderRadius: '5px', margin: '10px 0' }}>
-              <strong>🇬🇧 London Tour:</strong> Visiting {numberOfCities || 'selected number of'} cities starting from London
-            </div>
-          )}
-          
-          {tripType === TripTypes.CUSTOM_TOUR && startingCity && selectedCities && (
-            <div style={{ backgroundColor: '#f3e5f5', padding: '10px', borderRadius: '5px', margin: '10px 0' }}>
-              <strong>🎯 Custom Tour:</strong> Starting from {startingCity}, visiting: {selectedCities.join(', ')}
-            </div>
-          )}
-        </div>
-
-        {/* Cities in Your Trip Route with Food - Using HomePage container styling */}
-        <div className="header">
-          Cities in Your Trip Route 
-          <span style={{ fontSize: '14px', color: '#666', marginLeft: '10px' }}>
-            ({tripCities.length} cities - Click to view food options)
-          </span>
-        </div>
-        
-        {/* Apply HomePage container styling to cities section */}
-        <div style={{ overflow: 'auto', maxHeight: '600px', width: '100%' }}>
+        {/* Apply CreateTrip container styling to cities section */}
+        <div className="cities-route-container">
           {loading ? (
             <div style={{ textAlign: 'center', padding: '20px' }}>
               Loading cities in your route...
@@ -351,40 +510,55 @@ function DashboardPage() {
                     aria-label={`${expandedCities.has(city.id) ? 'Collapse' : 'Expand'} food options for ${city.name}`}
                     style={{
                       display: 'flex',
-                      alignItems: 'center'
+                      alignItems: 'center',
+                      width: '100%'
                     }}
                   >
                     <FaChevronDown 
                       aria-hidden="true"
                       style={{ marginRight: '10px' }}
                     />
-                    <span style={{ 
-                      backgroundColor: '#4CAF50', 
-                      color: 'white', 
-                      borderRadius: '50%', 
-                      width: '20px', 
-                      height: '20px', 
-                      display: 'inline-flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      marginRight: '8px',
-                      fontSize: '10px',
-                      fontWeight: 'bold'
-                    }}>
-                      {routeIndex + 1}
-                    </span>
-                    <span style={{ flex: 1 }}>
+                    { /* Number in route */ }
+                    <span> {routeIndex + 1}.</span>
+                    
+                    { /* City name and total spent */ }
+                    <span style={{ marginLeft: '5px', flex: '1' }}>
                       {city.name}
+
+                      { /* Show total spent in city */}
+                      {getCityTotal(city.name) > 0 && (
+                        <span className="city-summary">
+                          (${getCityTotal(city.name).toFixed(2)})
+                        </span>
+                      )}
+
                       <span style={{ fontSize: '12px', color: '#666', marginLeft: '10px' }}>
                         {routeIndex === 0 ? '(Starting City)' : `(Stop ${routeIndex})`}
                       </span>
                     </span>
+                    { /* END City name and total spent */ }
+
+                    { /* Distance from previous city - far right */ }
+                    {getDistanceFromPrevious(routeIndex) && (
+                      <span style={{
+                        fontSize: '12px',
+                        color: 'var(--secondary-brown)',
+                        fontWeight: 'bold',
+                        marginLeft: 'auto',
+                        marginRight: '10px',
+                        flexShrink: 0
+                      }}>
+                        {getDistanceFromPrevious(routeIndex)} km
+                      </span>
+                    )}
+                    { /* END Distance display */ }
+
                   </button>
                   
+
                   {/* Food Options - Only shown when expanded */}
                   {expandedCities.has(city.id) && (
                     <div style={{ paddingLeft: '20px', marginBottom: '10px' }}>
-                      <h4 className="header">Food Options:</h4>
                       {isLoadingFood ? (
                         <p style={{ color: '#666', fontStyle: 'italic' }}>Loading food...</p>
                       ) : cityFood.length > 0 ? (
@@ -394,42 +568,42 @@ function DashboardPage() {
                             const foodPrice = parseFloat(food.price || food.cost || food.amount || 0);
                             
                             return (
-                              <li key={index} style={{ padding: '5px 0', borderBottom: '1px solid #ccc' }}>
+                              <li key={index} className="food-name">
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <span>
-                                    <strong>{foodName}</strong> - ${foodPrice.toFixed(2)}
-                                  </span>
-                                  <button 
-                                    onClick={() => addFoodItem(city.name, { name: foodName, price: foodPrice })}
-                                    className="add-food-btn"
-                                    style={{
-                                      backgroundColor: '#f8f9fa',
-                                      color: '#212529',
-                                      border: '1px solid #dee2e6',
-                                      padding: '1px 4px',
-                                      borderRadius: '2px',
-                                      cursor: 'pointer',
-                                      fontSize: '9px',
-                                      fontWeight: 'normal',
-                                      width: '20px',
-                                      height: '20px',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      flexShrink: 0,
-                                      transition: 'all 0.2s'
-                                    }}
-                                    onMouseOver={(e) => {
-                                      e.target.style.backgroundColor = '#e9ecef';
-                                      e.target.style.borderColor = '#adb5bd';
-                                    }}
-                                    onMouseOut={(e) => {
-                                      e.target.style.backgroundColor = '#f8f9fa';
-                                      e.target.style.borderColor = '#dee2e6';
-                                    }}
-                                  >
-                                   +
-                                  </button>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', flex: 1 }}>
+                                    <span>{foodName}</span>
+                                    <span className="food-price">${foodPrice.toFixed(2)}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {/* Plus button on the left */}
+                                    <button 
+                                      onClick={() => addFoodItem(city.name, { name: foodName, price: foodPrice })}
+                                      className="food-button"
+                                      title="Add one"
+                                    >
+                                      <FaPlus />
+                                    </button>
+                                    {/* Quantity display and minus button - only show when quantity > 0 */}
+                                    {getFoodQuantity(city.name, foodName) > 0 && (
+                                      <>
+                                        <span style={{ 
+                                          minWidth: '20px', 
+                                          textAlign: 'center', 
+                                          fontWeight: 'bold',
+                                          color: 'var(--primary-brown)'
+                                        }}>
+                                          {getFoodQuantity(city.name, foodName)}
+                                        </span>
+                                        <button 
+                                          onClick={() => subtractFoodItem(city.name, { name: foodName, price: foodPrice })}
+                                          className="food-button food-minus-button"
+                                          title="Remove one"
+                                        >
+                                          <FaMinus />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
                                 </div>
                               </li>
                             );
@@ -440,6 +614,8 @@ function DashboardPage() {
                       )}
                     </div>
                   )}
+                  {/* END Food Options */}
+
                 </div>
               );
             })
@@ -452,11 +628,13 @@ function DashboardPage() {
       </div>
       {/* END LEFT SIDE */}
 
+
       {/* RIGHT SIDE - SELECTED FOOD ITEMS */}
       <div id="rightContainer" style={{ flex: '1' }}>
-        <div className="header">Your Food Selections</div>
+        <div className="create-header">Trip summary</div>
 
-        <div id="selected-cities-result" className="container">
+        { /* FOOD ITEMS SELECTED  */ }
+        {/* <div className="selected-cities-scroll-container">
           {selectedFoodItems.length === 0 ? (
             <p>No food items selected yet. Click on cities to view and add food options.</p>
           ) : (
@@ -482,26 +660,14 @@ function DashboardPage() {
               <strong>Total Food Cost: ${totalCost.toFixed(2)}</strong>
             </div>
           )}
-        </div>
+        </div> */}
 
-              {/* Trip Summary in Right Panel */}
-        <div style={{ 
-          backgroundColor: '#f5f5f5', 
-          padding: '10px', 
-          borderRadius: '5px',
-          marginBottom: '15px'
-        }}>
-          <h4 style={{ margin: '0 0 10px 0' }}>Trip Summary</h4>
+        {/* Trip Summary in Right Panel */}
+        <div className="trip-summary">
           <p style={{ margin: '5px 0' }}><strong>Type:</strong> {getTripTypeDisplay()}</p>
-          {totalDistance ? (
             <p style={{ margin: '5px 0'}}>
               <strong>Total Distance:</strong> {totalDistance} km
             </p>
-          ) : (
-            <p style={{ margin: '5px 0' }}>
-              <strong>Distance:</strong> Not available from backend
-            </p>
-          )}
           <p style={{ margin: '5px 0' }}>
             <strong>Food Cost:</strong> ${totalCost.toFixed(2)}
           </p>
@@ -509,22 +675,6 @@ function DashboardPage() {
             <strong>Cities in Route:</strong> {tripCities.length}
           </p>
         </div>
-        
-        <button 
-          id="submit" 
-          onClick={() => console.log('Trip finalized!', { 
-            tripType,
-            tripData, 
-            totalDistance,
-            selectedFoodItems, 
-            totalFoodCost: totalCost.toFixed(2) 
-          })}
-        >
-          Finalize Trip
-          <div style={{ fontSize: '12px', marginTop: '5px' }}>
-            {totalDistance ? `Distance: ${totalDistance} km` : 'Distance: N/A'} | Food: ${totalCost.toFixed(2)}
-          </div>
-        </button>
       </div>
       {/* END RIGHT SIDE */}
     </div>

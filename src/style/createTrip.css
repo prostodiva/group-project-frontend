@@ -11,58 +11,86 @@ body {
   letter-spacing: 2px;
   text-shadow: var(--text-shadow);
   color: var(--dark-brown);
-  margin-top: 10px;
+  margin-bottom: 20px;
+  text-align: center;
+  flex-shrink: 0;
 }
 
 /* List of Cities - left side background */
 #leftBG {
   background-color: var(--background);
-  padding: 0px 30px;
-  min-height: 100vh;
-  justify-content: center;
-  display: flex;
-  flex-direction: column;
+  padding: 20px 30px;
   border-width: 0px 15px;
   border-style: double;
+  display: flex;
+  flex-direction: column;
   border-color: var(--dark-brown);
-  flex-grow: 3;
+  min-width: 40vh;
+  height: 100vh;
 }
+
+/* WebKit scrollbar styling for cities list */
+#leftBG .cities-list::-webkit-scrollbar { width: 8px; }
+#leftBG .cities-list::-webkit-scrollbar-track { background: var(--background); border-radius: 6px; }
+#leftBG .cities-list::-webkit-scrollbar-thumb { background: var(--secondary-brown); border-radius: 6px; border: 1px solid var(--background); }
+#leftBG .cities-list::-webkit-scrollbar-thumb:hover { background: var(--primary-brown); }
 
 /* Right side container - holding title, selected cities and submit button */
 #rightContainer {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-width: 200px;
-  margin: 0px 50px;
+  width: 40vh;
+  padding: 0px 0px 0 10px;
 }
 
-/* Trip summary container - matches CreateTrip styling */
-.trip-summary {
+.create-header {
+  font-size: 35px;
+  font-family: var(--title-font);
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-shadow: var(--text-shadow);
+  color: var(--dark-brown);
+  margin: 0;
+}
+
+/* Starting city dropdown - fixed at top */
+.starting-city-dropdown {
   background-color: var(--background);
   padding: 15px;
   border-radius: 15px;
   box-shadow: var(--box-shadow);
   border: var(--border-style);
-  margin-bottom: 15px;
-  flex-shrink: 0;
+  flex-shrink: 0; /* Prevents compression */
 }
 
-/* Cities route container - matches CreateTrip scrollable styling */
-.cities-route-container {
-  padding: 5px;
-  overflow-y: auto;
-  max-height: 400px;
-  flex: 1;
+.starting-city-dropdown label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: var(--dark-brown);
+  font-family: var(--body-font);
 }
 
-/* Scrollbar for cities route container */
-.cities-route-container::-webkit-scrollbar { width: 6px; }
-.cities-route-container::-webkit-scrollbar-track { background: var(--background); border-radius: 4px; }
-.cities-route-container::-webkit-scrollbar-thumb { background: var(--secondary-brown); border-radius: 4px; }
-.cities-route-container::-webkit-scrollbar-thumb:hover { background: var(--primary-brown); }
+/* Dropdown select styling */
+.starting-city-dropdown select {
+  width: 100%;
+  padding: 8px;
+  border: 2px solid var(--primary-brown);
+  border-radius: 5px;
+  background-color: var(--background);
+  color: var(--dark-brown); /* Dark brown text for better readability */
+  font-family: var(--body-font);
+  font-size: 14px;
+}
 
-/* Selected food items container - matches CreateTrip styling */
+/* Style the dropdown options */
+.starting-city-dropdown select option {
+  color: var(--dark-brown);
+  background-color: var(--background);
+}
+
+/* Scrollable container for selected cities */
 .selected-cities-scroll-container {
   background-color: var(--background);
   border-radius: 15px;
@@ -70,58 +98,31 @@ body {
   border: var(--border-style);
   padding: 15px;
   overflow-y: auto;
+  margin: 10px 0px;
   max-height: 300px;
   flex: 1;
-  margin: 10px 0px;
 }
 
-/* Scrollbar for selected food items container */
+/* Scrollbar for selected cities container */
 .selected-cities-scroll-container::-webkit-scrollbar { width: 6px; }
 .selected-cities-scroll-container::-webkit-scrollbar-track { background: var(--background); border-radius: 4px; }
 .selected-cities-scroll-container::-webkit-scrollbar-thumb { background: var(--secondary-brown); border-radius: 4px; }
 .selected-cities-scroll-container::-webkit-scrollbar-thumb:hover { background: var(--primary-brown); }
 
-.dash-food-container {
-  display: flex;
-  padding: 0px 10px; 
-  margin: 0px 5px;
-}
-/* Food add button styling - matches CreateTrip page buttons */
-.food-button {
-  background-color: var(--primary-brown);
-  color: var(--default-text-color);
-  border: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  flex-shrink: 0;
-  padding: 0;
-  margin-left: 10px;
-  font-size: 14px;
-  font-weight: bold;
-  transition: background-color 0.2s ease;
-}
-
-/* Food button hover effect - matches CreateTrip page */
-.food-button:hover {
-  background-color: #45a049;
-}
-
-/* Food minus button specific styling */
-.food-minus-button {
+/* Create my trip button */
+#submit {
+  border: var(--border-style);
   background-color: var(--secondary-brown);
-  margin-left: 0;
-  margin-right: 5px;
-}
-
-/* Food minus button hover effect */
-.food-minus-button:hover {
-  background-color: #da190b;
+  border-radius: var(--border-radius);
+  color: var(--default-text-color);
+  padding: 10px 15px;
+  text-align: left;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  cursor: pointer;
+  font-family: var(--body-font);
+  align-self: end;
 }
 
 /* City name box styling */
@@ -151,6 +152,16 @@ body {
   align-items: center;
   justify-content: center;
   text-align: center;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+/* Ensure React Icons (SVG) are visible and properly sized */
+.city-row button svg, .selected-city-row .minus-btn svg {
+  width: 14px;
+  height: 14px;
+  color: currentColor;
+  fill: currentColor;
 }
 
 /* plus button hover */
