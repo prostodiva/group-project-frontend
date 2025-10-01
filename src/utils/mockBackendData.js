@@ -4,29 +4,29 @@
 export const mockCitiesWithCoordinates = [
   {
     id: 1,
-    name: "Paris",
+    name: "Amsterdam",
     latitude: 48.8566,
     longitude: 2.3522,
     food: [
-      { name: "Croissant", price: 3.50 },
-      { name: "Baguette", price: 2.00 },
-      { name: "Macaron", price: 2.50 }
+      { name: "Stroopwafel", price: 5.76 },
+      { name: "Thick Dutch fries", price: 2.00 },
+      { name: "Kibbeling", price: 2.50 }
     ]
   },
   {
     id: 2,
-    name: "London",
+    name: "Berlin",
     latitude: 51.5074,
     longitude: -0.1278,
     food: [
-      { name: "Fish and Chips", price: 8.50 },
-      { name: "Bangers and Mash", price: 7.00 },
-      { name: "Shepherd's Pie", price: 9.00 }
+      { name: "Pretzels", price: 8.50 },
+      { name: "Apfelstrudel", price: 7.00 },
+      { name: "Berliner Pfannkuche", price: 9.00 }
     ]
   },
   {
     id: 3,
-    name: "Berlin",
+    name: "Brussels",
     latitude: 52.5200,
     longitude: 13.4050,
     food: [
@@ -37,7 +37,7 @@ export const mockCitiesWithCoordinates = [
   },
   {
     id: 4,
-    name: "Rome",
+    name: "Budapest",
     latitude: 41.9028,
     longitude: 12.4964,
     food: [
@@ -48,7 +48,7 @@ export const mockCitiesWithCoordinates = [
   },
   {
     id: 5,
-    name: "Madrid",
+    name: "Hamburg",
     latitude: 40.4168,
     longitude: -3.7038,
     food: [
@@ -59,7 +59,7 @@ export const mockCitiesWithCoordinates = [
   },
   {
     id: 6,
-    name: "Amsterdam",
+    name: "Lisbon",
     latitude: 52.3676,
     longitude: 4.9041,
     food: [

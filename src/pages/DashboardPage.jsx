@@ -665,16 +665,6 @@ function DashboardPage() {
         {/* Trip Summary in Right Panel */}
         <div className="trip-summary">
           <p style={{ margin: '5px 0' }}><strong>Type:</strong> {getTripTypeDisplay()}</p>
-          {isOptimizedTrip() && (
-            <p style={{ 
-              margin: '5px 0', 
-              color: 'var(--secondary-brown)', 
-              fontWeight: 'bold',
-              fontSize: '0.9em'
-            }}>
-              ✓ Route Optimized by Backend
-            </p>
-          )}
             <p style={{ margin: '5px 0'}}>
               <strong>Total Distance:</strong> {totalDistance} km
             </p>
