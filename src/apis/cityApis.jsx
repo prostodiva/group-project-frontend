@@ -58,98 +58,11 @@ const calculateRouteDistances = (cities) => {
   return result;
 };
 
+import { mockCitiesWithCoordinates } from '../utils/mockBackendData.js';
+
 // Mock cities data with coordinates for testing
 const mockCitiesData = {
-  cities: [
-    {
-      id: 1,
-      name: "Paris",
-      latitude: 48.8566,
-      longitude: 2.3522,
-      food: [
-        { name: "Croissant", price: 3.50 },
-        { name: "Baguette", price: 2.00 },
-        { name: "Macaron", price: 2.50 }
-      ]
-    },
-    {
-      id: 2,
-      name: "London",
-      latitude: 51.5074,
-      longitude: -0.1278,
-      food: [
-        { name: "Fish and Chips", price: 8.50 },
-        { name: "Bangers and Mash", price: 7.00 },
-        { name: "Shepherd's Pie", price: 9.00 }
-      ]
-    },
-    {
-      id: 3,
-      name: "Berlin",
-      latitude: 52.5200,
-      longitude: 13.4050,
-      food: [
-        { name: "Bratwurst", price: 4.50 },
-        { name: "Sauerkraut", price: 3.00 },
-        { name: "Pretzel", price: 2.50 }
-      ]
-    },
-    {
-      id: 4,
-      name: "Rome",
-      latitude: 41.9028,
-      longitude: 12.4964,
-      food: [
-        { name: "Pizza Margherita", price: 12.00 },
-        { name: "Pasta Carbonara", price: 14.00 },
-        { name: "Gelato", price: 4.50 }
-      ]
-    },
-    {
-      id: 5,
-      name: "Madrid",
-      latitude: 40.4168,
-      longitude: -3.7038,
-      food: [
-        { name: "Paella", price: 16.00 },
-        { name: "Tapas", price: 6.00 },
-        { name: "Churros", price: 3.50 }
-      ]
-    },
-    {
-      id: 6,
-      name: "Amsterdam",
-      latitude: 52.3676,
-      longitude: 4.9041,
-      food: [
-        { name: "Stroopwafel", price: 2.50 },
-        { name: "Dutch Cheese", price: 8.00 },
-        { name: "Herring", price: 5.50 }
-      ]
-    },
-    {
-      id: 7,
-      name: "Brussels",
-      latitude: 50.8503,
-      longitude: 4.3517,
-      food: [
-        { name: "Belgian Waffle", price: 4.00 },
-        { name: "Chocolate", price: 6.00 },
-        { name: "Frites", price: 3.50 }
-      ]
-    },
-    {
-      id: 8,
-      name: "Vienna",
-      latitude: 48.2082,
-      longitude: 16.3738,
-      food: [
-        { name: "Schnitzel", price: 12.00 },
-        { name: "Sachertorte", price: 5.50 },
-        { name: "Apfelstrudel", price: 4.50 }
-      ]
-    }
-  ]
+  cities: mockCitiesWithCoordinates
 };
 
 export const citiesAPI = {
