@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { FaChevronDown, FaPlus, FaMinus } from "react-icons/fa";
 import { useLocation } from "react-router-dom";
-import { citiesAPI } from "../apis/cityApis";
+import { citiesAPI, calculateRouteDistances } from "../apis/cityApis";
 import { TripTypes } from "../apis/tripApi";
 import "../style/dashboard.css";
 
@@ -16,6 +16,10 @@ function DashboardPage() {
   const [cityFoodData, setCityFoodData] = useState({});
   const [expandedCities, setExpandedCities] = useState(new Set()); // Track expanded cities
   const [loadingFood, setLoadingFood] = useState(new Set()); // Track cities loading food
+
+  // State for managing distance data
+  const [calculatedDistances, setCalculatedDistances] = useState(null);
+  const [calculatedTotalDistance, setCalculatedTotalDistance] = useState(null);
 
   // Debug: Log the trip data when component mounts
   useEffect(() => {
@@ -178,6 +182,35 @@ function DashboardPage() {
         
         setTripCities(citiesToShow);
 
+        // Always calculate distances for accurate display
+        if (citiesToShow.length > 1) {
+          console.log('Calculating distances for dashboard display...');
+          const distanceData = calculateRouteDistances(citiesToShow);
+          console.log('Calculated dashboard distances:', distanceData);
+          
+          // Store calculated distances in state
+          setCalculatedDistances(distanceData.distances);
+          setCalculatedTotalDistance(distanceData.totalDistance);
+          
+          // Update the tripData with calculated distances if it exists
+          if (tripData) {
+            const updatedTripData = {
+              ...tripData,
+              distances: distanceData.distances,
+              totalDistance: distanceData.totalDistance
+            };
+            
+            // Update the location state to include distance data
+            window.history.replaceState(
+              { 
+                ...location.state, 
+                tripData: updatedTripData 
+              }, 
+              ''
+            );
+          }
+        }
+
       } catch (err) {
         console.error('Failed to fetch cities:', err);
         setError('Failed to load cities');
@@ -311,6 +344,64 @@ function DashboardPage() {
     }, 0);
   };
 
+  // Calculate total spent in a specific city
+  const getCityTotal = (cityName) => {
+    return selectedFoodItems
+      .filter(item => item.cityName === cityName)
+      .reduce((total, item) => {
+        return total + (item.price * item.quantity);
+      }, 0);
+  };
+
+  // Get distance from previous city
+  const getDistanceFromPrevious = (currentIndex) => {
+    if (currentIndex === 0) return null; // No distance for starting city
+    
+    // Use calculated distances from state first (most accurate)
+    if (calculatedDistances && Array.isArray(calculatedDistances)) {
+      return calculatedDistances[currentIndex - 1];
+    }
+    
+    // Check if tripData has individual distances (from backend optimization)
+    if (tripData?.distances && Array.isArray(tripData.distances)) {
+      return tripData.distances[currentIndex - 1];
+    }
+    
+    // Check if tripData has itinerary with distances
+    if (tripData?.itinerary && Array.isArray(tripData.itinerary)) {
+      const segment = tripData.itinerary[currentIndex - 1];
+      return segment?.distance || segment?.distanceKm || segment?.km;
+    }
+    
+    // Check if cities have distance property
+    const currentCity = tripCities[currentIndex];
+    if (currentCity?.distanceFromPrevious || currentCity?.distance) {
+      return currentCity.distanceFromPrevious || currentCity.distance;
+    }
+    
+    return null; // No distance data available
+  };
+
+  // Check if trip was optimized by backend
+  const isOptimizedTrip = () => {
+    return tripData?.optimized === true;
+  };
+
+  // Get optimization source info
+  const getOptimizationInfo = () => {
+    if (!tripData?.optimized) return null;
+    
+    const source = tripData.optimizationSource || 'unknown';
+    const sourceLabels = {
+      'backend': 'Backend Algorithm',
+      'local': 'Local Algorithm', 
+      'none': 'No Optimization',
+      'unknown': 'Optimized'
+    };
+    
+    return sourceLabels[source] || 'Optimized';
+  };
+
   // OLD REMOVE FUNCTION - BELONGS TO RITA'S OLD FOOD LIST
   // const removeFoodItem = (itemId) => {
   //   const item = selectedFoodItems.find(item => item.id === itemId);
@@ -336,8 +427,15 @@ function DashboardPage() {
     }
   };
 
-  // Enhanced helper function to get total distance from different possible data structures
+  // Enhanced helper function to get total distance - prioritize calculated values
   const getTotalDistance = () => {
+    // Use calculated total distance from state first (most accurate)
+    if (calculatedTotalDistance !== null) {
+      console.log('Using calculated total distance:', calculatedTotalDistance);
+      return calculatedTotalDistance;
+    }
+    
+    // Fallback to tripData if no calculated distance available
     if (!tripData) return null;
     
     const distance = tripData.totalDistance || 
@@ -351,7 +449,7 @@ function DashboardPage() {
                     tripData.total_distance_km ||
                     null;
     
-    console.log('Found distance:', distance);
+    console.log('Using tripData distance:', distance);
     return distance;
   };
 
@@ -412,7 +510,8 @@ function DashboardPage() {
                     aria-label={`${expandedCities.has(city.id) ? 'Collapse' : 'Expand'} food options for ${city.name}`}
                     style={{
                       display: 'flex',
-                      alignItems: 'center'
+                      alignItems: 'center',
+                      width: '100%'
                     }}
                   >
                     <FaChevronDown 
@@ -422,12 +521,38 @@ function DashboardPage() {
                     { /* Number in route */ }
                     <span> {routeIndex + 1}.</span>
                     
+                    { /* City name and total spent */ }
                     <span style={{ marginLeft: '5px', flex: '1' }}>
                       {city.name}
+
+                      { /* Show total spent in city */}
+                      {getCityTotal(city.name) > 0 && (
+                        <span className="city-summary">
+                          (${getCityTotal(city.name).toFixed(2)})
+                        </span>
+                      )}
+
                       <span style={{ fontSize: '12px', color: '#666', marginLeft: '10px' }}>
                         {routeIndex === 0 ? '(Starting City)' : `(Stop ${routeIndex})`}
                       </span>
                     </span>
+                    { /* END City name and total spent */ }
+
+                    { /* Distance from previous city - far right */ }
+                    {getDistanceFromPrevious(routeIndex) && (
+                      <span style={{
+                        fontSize: '12px',
+                        color: 'var(--secondary-brown)',
+                        fontWeight: 'bold',
+                        marginLeft: 'auto',
+                        marginRight: '10px',
+                        flexShrink: 0
+                      }}>
+                        {getDistanceFromPrevious(routeIndex)} km
+                      </span>
+                    )}
+                    { /* END Distance display */ }
+
                   </button>
                   
 
@@ -540,6 +665,16 @@ function DashboardPage() {
         {/* Trip Summary in Right Panel */}
         <div className="trip-summary">
           <p style={{ margin: '5px 0' }}><strong>Type:</strong> {getTripTypeDisplay()}</p>
+          {isOptimizedTrip() && (
+            <p style={{ 
+              margin: '5px 0', 
+              color: 'var(--secondary-brown)', 
+              fontWeight: 'bold',
+              fontSize: '0.9em'
+            }}>
+              ✓ Route Optimized by Backend
+            </p>
+          )}
             <p style={{ margin: '5px 0'}}>
               <strong>Total Distance:</strong> {totalDistance} km
             </p>

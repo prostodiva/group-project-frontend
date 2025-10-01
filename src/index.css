@@ -118,6 +118,14 @@ body {
   color: var(secondary-brown);
 }
 
+.city-summary {
+  font-size: 16px;
+  font-family: var(--body-font);
+  font-weight: bold;
+  margin: 10px 0;
+  color: var(--default-text-color);
+}
+
 
 /* Styling for the trip option buttons
   example: tour options, tour descriptions */

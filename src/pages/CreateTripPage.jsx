@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaPlus, FaMinus } from 'react-icons/fa';
-import { citiesAPI } from '../apis/cityApis';
+import { citiesAPI, calculateRouteDistances } from '../apis/cityApis';
 import Input from '../components/Input';
 import '../style/createTrip.css';
 
@@ -94,7 +94,7 @@ const CreateTripPage = () => {
   };
 
   // Save and submit the trip
-  const saveListAndSubmit = () => {
+  const saveListAndSubmit = async () => {
     if (selectedCities.length === 0) {
       alert('Please select at least one city before submitting!');
       return;
@@ -105,73 +105,133 @@ const CreateTripPage = () => {
       alert('Please select a starting city from the dropdown!');
       return;
     }
-    
-    // Extract city names for dashboard compatibility
-    const cityNames = selectedCities.map(city => city.name);
+
     const startingCityName = selectedStartingCity || selectedCities[0]?.name || 'Custom Starting Point';
-    
-    // Create ordered route with starting city first
-    const orderedRoute = [];
-    const orderedCities = [];
-    
-    // Find the starting city object
     const startingCityObj = selectedCities.find(city => city.name === startingCityName);
-    if (startingCityObj) {
-      orderedRoute.push(startingCityName);
-      orderedCities.push(startingCityObj);
-    }
-    
-    // Add remaining cities (excluding the starting city)
-    selectedCities.forEach(city => {
-      if (city.name !== startingCityName) {
-        orderedRoute.push(city.name);
-        orderedCities.push(city);
+
+    try {
+      // Prepare parameters for backend route optimization
+      const tripParams = {
+        cities: selectedCities.map(city => ({
+          id: city.id,
+          name: city.name,
+          latitude: city.latitude || city.lat,
+          longitude: city.longitude || city.lng || city.lon
+        })),
+        startingCity: {
+          id: startingCityObj.id,
+          name: startingCityObj.name,
+          latitude: startingCityObj.latitude || startingCityObj.lat,
+          longitude: startingCityObj.longitude || startingCityObj.lng || startingCityObj.lon
+        },
+        tripType: 'custom',
+        preferences: {
+          optimize: 'distance', // or 'time', depending on your backend options
+          returnToStart: false
+        }
+      };
+
+      console.log('Requesting route optimization with params:', tripParams);
+      
+      // Get optimized route from backend
+      const optimizedRouteData = await citiesAPI.getOptimizedRoute(tripParams);
+      
+      // Calculate distances if not provided by backend
+      let distances = optimizedRouteData.distances;
+      let totalDistance = optimizedRouteData.totalDistance;
+      
+      if (!distances || !totalDistance) {
+        console.log('Backend did not provide distance data, calculating locally...');
+        const citiesForCalculation = optimizedRouteData.cities || selectedCities;
+        const distanceData = calculateRouteDistances(citiesForCalculation);
+        distances = distanceData.distances;
+        totalDistance = distanceData.totalDistance;
+        console.log('Calculated distances for backend route:', distanceData);
       }
-    });
-    
-    // For debugging - webbrowser console
-    console.log('=== CREATETRIP DEBUG ===');
-    console.log('selectedCities (objects):', selectedCities);
-    console.log('startingCityName:', startingCityName);
-    console.log('orderedRoute (starting city first):', orderedRoute);
-    console.log('orderedCities (starting city first):', orderedCities);
-    console.log('======================');
-    
-
-    // Prepare trip data for dashboard
-    const tripData = {
-      tripType: 'custom',
-      cities: orderedCities, // full city objects with starting city first
-      route: orderedRoute, // city names with starting city first
-      startingCity: startingCityName,
-      createdAt: new Date().toISOString(),
-      description: `Custom Trip starting from ${startingCityName} - ${selectedCities.length} cities selected`
-    }; // END tripData
-
-    
-    // Save to localStorage (backup)
-    localStorage.setItem('selectedCities', JSON.stringify(selectedCities));
-    localStorage.setItem('customTripData', JSON.stringify(tripData));
-    console.log('Final tripData being sent:', tripData);
-    console.log('Final state being sent to dashboard:', {
-      tripType: 'custom_tour', // Match TripTypes.CUSTOM_TOUR
-      tripData: tripData,
-      selectedCities: orderedRoute, // pass ordered route with starting city first
-      startingCity: startingCityName,
-      description: tripData.description
-    }); // END console.log
-
-    
-    // Navigate to dashboard with trip data
-    navigate('/dashboard', { 
-      state: { 
-        tripType: 'custom_tour',
-        tripData: tripData,
-        selectedCities: orderedRoute, // pass ordered route with starting city first
+      
+      // Use backend-optimized route data
+      const tripData = {
+        tripType: 'custom',
+        cities: optimizedRouteData.cities || selectedCities, // Backend provides ordered cities
+        route: optimizedRouteData.route || optimizedRouteData.cityNames, // Backend provides ordered route
+        distances: distances, // Individual segment distances
+        totalDistance: totalDistance,
         startingCity: startingCityName,
-        description: tripData.description
-      } 
-    }); // END navigate
+        optimized: true, // Flag to indicate this came from backend optimization
+        optimizationSource: 'backend',
+        createdAt: new Date().toISOString(),
+        description: `Optimized Custom Trip starting from ${startingCityName} - ${selectedCities.length} cities`
+      };
+
+      console.log('Received optimized trip data from backend:', tripData);
+      
+      // Save to localStorage (backup)
+      localStorage.setItem('selectedCities', JSON.stringify(selectedCities));
+      localStorage.setItem('customTripData', JSON.stringify(tripData));
+      
+      // Navigate to dashboard with optimized trip data
+      navigate('/dashboard', { 
+        state: { 
+          tripType: 'custom_tour',
+          tripData: tripData,
+          selectedCities: tripData.route, // Use backend-optimized route
+          startingCity: startingCityName,
+          description: tripData.description
+        } 
+      });
+
+    } catch (error) {
+      console.error('Route optimization failed, falling back to simple ordering:', error);
+      
+      // Fallback to current frontend logic if backend fails
+      // Create ordered route with starting city first
+      const orderedRoute = [];
+      const orderedCities = [];
+      
+      // Find the starting city object
+      if (startingCityObj) {
+        orderedRoute.push(startingCityName);
+        orderedCities.push(startingCityObj);
+      }
+      
+      // Add remaining cities (excluding the starting city)
+      selectedCities.forEach(city => {
+        if (city.name !== startingCityName) {
+          orderedRoute.push(city.name);
+          orderedCities.push(city);
+        }
+      });
+
+      // Calculate distances for the fallback route
+      const distanceData = calculateRouteDistances(orderedCities);
+      console.log('Calculated fallback route distances:', distanceData);
+
+      const tripData = {
+        tripType: 'custom',
+        cities: orderedCities,
+        route: orderedRoute,
+        distances: distanceData.distances,
+        totalDistance: distanceData.totalDistance,
+        startingCity: startingCityName,
+        optimized: false, // Flag to indicate fallback was used
+        optimizationSource: 'none',
+        createdAt: new Date().toISOString(),
+        description: `Custom Trip starting from ${startingCityName} - ${selectedCities.length} cities selected`
+      };
+
+      localStorage.setItem('selectedCities', JSON.stringify(selectedCities));
+      localStorage.setItem('customTripData', JSON.stringify(tripData));
+      
+      navigate('/dashboard', { 
+        state: { 
+          tripType: 'custom_tour',
+          tripData: tripData,
+          selectedCities: orderedRoute,
+          startingCity: startingCityName,
+          description: tripData.description
+        } 
+      });
+    }
   };
 
   // LOADING SERVER STATES
