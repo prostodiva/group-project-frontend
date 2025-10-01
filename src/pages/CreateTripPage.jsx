@@ -100,32 +100,52 @@ const CreateTripPage = () => {
       return;
     }
     
-    // Extract city names for dashboard compatibility
-    const cityNames = selectedCities.map(city => city.name);
-    const startingCityName = selectedStartingCity || selectedCities[0]?.name || 'Custom Starting Point';
-    
     // Validate starting city selection
     if (selectedCities.length > 0 && !selectedStartingCity) {
       alert('Please select a starting city from the dropdown!');
       return;
     }
     
+    // Extract city names for dashboard compatibility
+    const cityNames = selectedCities.map(city => city.name);
+    const startingCityName = selectedStartingCity || selectedCities[0]?.name || 'Custom Starting Point';
+    
+    // Create ordered route with starting city first
+    const orderedRoute = [];
+    const orderedCities = [];
+    
+    // Find the starting city object
+    const startingCityObj = selectedCities.find(city => city.name === startingCityName);
+    if (startingCityObj) {
+      orderedRoute.push(startingCityName);
+      orderedCities.push(startingCityObj);
+    }
+    
+    // Add remaining cities (excluding the starting city)
+    selectedCities.forEach(city => {
+      if (city.name !== startingCityName) {
+        orderedRoute.push(city.name);
+        orderedCities.push(city);
+      }
+    });
+    
     // For debugging - webbrowser console
     console.log('=== CREATETRIP DEBUG ===');
     console.log('selectedCities (objects):', selectedCities);
-    console.log('cityNames (extracted):', cityNames);
     console.log('startingCityName:', startingCityName);
+    console.log('orderedRoute (starting city first):', orderedRoute);
+    console.log('orderedCities (starting city first):', orderedCities);
     console.log('======================');
     
 
     // Prepare trip data for dashboard
     const tripData = {
       tripType: 'custom',
-      cities: selectedCities, // full city objects
-      route: cityNames, // just names for dashboard route
+      cities: orderedCities, // full city objects with starting city first
+      route: orderedRoute, // city names with starting city first
       startingCity: startingCityName,
       createdAt: new Date().toISOString(),
-      description: `Custom Trip - ${selectedCities.length} cities selected`
+      description: `Custom Trip starting from ${startingCityName} - ${selectedCities.length} cities selected`
     }; // END tripData
 
     
@@ -136,7 +156,7 @@ const CreateTripPage = () => {
     console.log('Final state being sent to dashboard:', {
       tripType: 'custom_tour', // Match TripTypes.CUSTOM_TOUR
       tripData: tripData,
-      selectedCities: cityNames,
+      selectedCities: orderedRoute, // pass ordered route with starting city first
       startingCity: startingCityName,
       description: tripData.description
     }); // END console.log
@@ -147,7 +167,7 @@ const CreateTripPage = () => {
       state: { 
         tripType: 'custom_tour',
         tripData: tripData,
-        selectedCities: cityNames, // pass city names, not objects
+        selectedCities: orderedRoute, // pass ordered route with starting city first
         startingCity: startingCityName,
         description: tripData.description
       } 
@@ -177,7 +197,7 @@ const CreateTripPage = () => {
     <div style={{ display: 'flex', height: '100vh' }}>
       {/* LEFT SIDE - LIST OF CITIES */}
       <div id="leftBG">
-        <div className="header">List of Cities</div>
+        <div className="create-header">List of Cities</div>
         
         <div className="cities-list">
           {availableCities.map(city => (
@@ -193,37 +213,26 @@ const CreateTripPage = () => {
 
       {/* RIGHT SIDE - CHOSEN CITIES */}
       <div id="rightContainer">
-        <div className="header">My List</div>
+        <div className="create-header">My List</div>
         
-        <div id="selected-cities-result" className="create-trip-container">
-          
-            {/* Starting City Dropdown - only show when cities are selected */}
-          <div style={{ marginBottom: '15px' }}>
-            <label>Choose Starting City:</label>
-            <select 
-              value={selectedStartingCity} 
-              onChange={(e) => setSelectedStartingCity(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px',
-                border: '2px solid var(--primary-brown)',
-                borderRadius: '5px',
-                backgroundColor: 'var(--background)',
-                color: 'var(--default-text-color)',
-                fontFamily: 'var(--body-font)',
-                fontSize: '14px'
-              }}
-            >
-              <option value="">Select starting city...</option>
-              {selectedCities.map(city => (
-                <option key={city.id} value={city.name}>
-                  {city.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          {/* END starting city dropdown */}
-          
+        {/* Starting City Dropdown - Fixed at top */}
+        <div className="starting-city-dropdown">
+          <label>Choose Starting City:</label>
+          <select 
+            value={selectedStartingCity} 
+            onChange={(e) => setSelectedStartingCity(e.target.value)}
+          >
+            <option value="">Select starting city...</option>
+            {selectedCities.map(city => (
+              <option key={city.id} value={city.name}>
+                {city.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        {/* Scrollable Selected Cities List */}
+        <div className="selected-cities-scroll-container">
           {selectedCities.map((city, index) => (
             <div
               key={city.id}

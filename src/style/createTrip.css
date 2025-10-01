@@ -44,29 +44,70 @@ body {
   padding: 0px 0px 0 10px;
 }
 
-/* Selected cities result box */
-.create-trip-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start; /* align to top instead of center */
+.create-header {
+  font-size: 35px;
+  font-family: var(--title-font);
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-shadow: var(--text-shadow);
+  color: var(--dark-brown);
+  margin: 0;
+}
+
+/* Starting city dropdown - fixed at top */
+.starting-city-dropdown {
+  background-color: var(--background);
   padding: 15px;
-  overflow-y: auto;
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  margin: 10px 0px;
-  background-color:var(--background);
-  padding: 20px;
   border-radius: 15px;
   box-shadow: var(--box-shadow);
   border: var(--border-style);
+  flex-shrink: 0; /* Prevents compression */
+}
+
+.starting-city-dropdown label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: var(--dark-brown);
+  font-family: var(--body-font);
+}
+
+/* Dropdown select styling */
+.starting-city-dropdown select {
+  width: 100%;
+  padding: 8px;
+  border: 2px solid var(--primary-brown);
+  border-radius: 5px;
+  background-color: var(--background);
+  color: var(--dark-brown); /* Dark brown text for better readability */
+  font-family: var(--body-font);
+  font-size: 14px;
+}
+
+/* Style the dropdown options */
+.starting-city-dropdown select option {
+  color: var(--dark-brown);
+  background-color: var(--background);
+}
+
+/* Scrollable container for selected cities */
+.selected-cities-scroll-container {
+  background-color: var(--background);
+  border-radius: 15px;
+  box-shadow: var(--box-shadow);
+  border: var(--border-style);
+  padding: 15px;
+  overflow-y: auto;
+  margin: 10px 0px;
+  max-height: 300px;
+  flex: 1;
 }
 
 /* Scrollbar for selected cities container */
-.create-trip-container::-webkit-scrollbar { width: 6px; }
-.create-trip-container::-webkit-scrollbar-track { background: var(--background); border-radius: 4px; }
-.create-trip-container::-webkit-scrollbar-thumb { background: var(--secondary-brown); border-radius: 4px; }
-.create-trip-container::-webkit-scrollbar-thumb:hover { background: var(--primary-brown); }
+.selected-cities-scroll-container::-webkit-scrollbar { width: 6px; }
+.selected-cities-scroll-container::-webkit-scrollbar-track { background: var(--background); border-radius: 4px; }
+.selected-cities-scroll-container::-webkit-scrollbar-thumb { background: var(--secondary-brown); border-radius: 4px; }
+.selected-cities-scroll-container::-webkit-scrollbar-thumb:hover { background: var(--primary-brown); }
 
 /* Create my trip button */
 #submit {
