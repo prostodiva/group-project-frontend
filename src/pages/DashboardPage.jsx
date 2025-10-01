@@ -9,7 +9,7 @@ import "../style/dashboard.css";
 function DashboardPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { tripType, tripData, description, numberOfCities, startingCity, selectedCities, algorithmInfo } = location.state || {};
+  const { tripType, tripData, description, numberOfCities, startingCity, selectedCities } = location.state || {};
   
   const [tripCities, setTripCities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -164,7 +164,8 @@ function DashboardPage() {
       tripType,
       tripData, 
       totalDistance,
-      selectedFoodItems, 
+      selectedFoodItems,
+      tripCities, 
       totalFoodCost: totalCost.toFixed(2)
     }
   });

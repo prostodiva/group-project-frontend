@@ -3,7 +3,7 @@ import { TripTypes } from "../apis/tripApi";
 
 function SummaryPage() {
   const location = useLocation();
-  const { tripType, tripData, totalDistance, selectedFoodItems, totalFoodCost } = location.state || {};
+  const { tripType, tripData, totalDistance, selectedFoodItems, totalFoodCost, tripCities } = location.state || {};
 
   const getTripTypeDisplay = () => {
     switch(tripType) {
@@ -34,7 +34,36 @@ function SummaryPage() {
   };
 
   const totalCost = totalFoodCost ? parseFloat(totalFoodCost) : 0;
-  const tripCities = tripData?.cities || tripData?.route || [];
+  
+  // Fix: Use tripCities directly if available, otherwise fallback to tripData
+  const getCitiesCount = () => {
+    // First try to use tripCities passed from Dashboard
+    if (tripCities && Array.isArray(tripCities)) {
+      return tripCities.length;
+    }
+    
+    // Fallback to tripData if tripCities not available
+    if (!tripData) return 0;
+    
+    // Check if tripData has cities array
+    if (tripData.cities && Array.isArray(tripData.cities)) {
+      return tripData.cities.length;
+    }
+    
+    // Check if tripData has route array
+    if (tripData.route && Array.isArray(tripData.route)) {
+      return tripData.route.length;
+    }
+    
+    // Check if tripData has itinerary array
+    if (tripData.itinerary && Array.isArray(tripData.itinerary)) {
+      return tripData.itinerary.length;
+    }
+    
+    return 0;
+  };
+
+  const citiesCount = getCitiesCount();
 
   if (!tripData) {
     return (
@@ -70,7 +99,7 @@ function SummaryPage() {
             <strong>Food Cost:</strong> ${totalCost.toFixed(2)}
           </p>
           <p style={{ margin: '5px 0'}}>
-            <strong>Cities in Route:</strong> {tripCities.length}
+            <strong>Cities in Route:</strong> {citiesCount}
           </p>
           {/* City Spending Breakdown */}
           {selectedFoodItems && selectedFoodItems.length > 0 && (
