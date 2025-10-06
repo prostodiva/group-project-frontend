@@ -77,7 +77,6 @@ function SummaryPage() {
     
   return (
     <div>
-      <h1>Summary Page</h1>
         <div style={{ 
           backgroundColor: '#f5f5f5', 
           padding: '10px', 

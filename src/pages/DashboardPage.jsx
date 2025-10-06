@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { FaChevronDown } from "react-icons/fa";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { citiesAPI } from "../apis/cityApis";
 import { TripTypes } from "../apis/tripApi";
 import "../style/dashboard.css";
@@ -21,24 +20,32 @@ function DashboardPage() {
   const [loadingFood, setLoadingFood] = useState(new Set()); // Track cities loading food
 
   // Debug: Log the trip data when component mounts
-  useEffect(() => {
-    console.log('=== DASHBOARD DEBUG INFO ===');
-    console.log('Trip Type:', tripType);
-    console.log('Trip Data:', tripData);
-    console.log('Number of Cities (London):', numberOfCities);
-    console.log('Starting City (Custom):', startingCity);
-    console.log('Selected Cities (Custom):', selectedCities);
-    console.log('Description:', description);
-    
-    if (tripData) {
-      console.log('Available properties in tripData:', Object.keys(tripData));
-      console.log('Trip route from backend:', tripData.route);
-      console.log('Trip cities from backend:', tripData.cities);
-      console.log('Trip itinerary from backend:', tripData.itinerary);
-    }
-    console.log('=== END DEBUG INFO ===');
-  }, [tripData, tripType, numberOfCities, startingCity, selectedCities]);
 
+    useEffect(() => {
+      console.log('=== DASHBOARD DEBUG INFO ===');
+      console.log('Trip Type:', tripType);
+      console.log('Trip Data:', tripData);
+      console.log('Number of Cities (London):', numberOfCities);
+      console.log('Starting City (Custom):', startingCity);
+      console.log('Selected Cities (Custom):', selectedCities);
+      console.log('Description:', description);
+      
+      if (tripData) {
+        console.log('Available properties in tripData:', Object.keys(tripData));
+        console.log('Trip route from backend:', tripData.trip?.cities);
+        console.log('Trip cities from backend:', tripData.trip?.cities);
+        console.log('Trip itinerary from backend:', tripData.itinerary);
+        
+        // Add this detailed route logging
+        if (tripData.trip?.cities && Array.isArray(tripData.trip.cities)) {
+          console.log('=== ROUTE DETAILS ===');
+          console.log('Route length:', tripData.trip.cities.length);
+          console.log('Route cities:', tripData.trip.cities.map(c => c.city_name));
+          console.log('Expected Paris route: Paris, Brussels, Amsterdam, Hamburg, Berlin, Prague, Budapest, Rome, London, Madrid, Lisbon');
+        }
+      }
+      console.log('=== END DEBUG INFO ===');
+    }, [tripData, tripType, numberOfCities, startingCity, selectedCities]);
   useEffect(() => {
     const fetchTripCities = async () => {
       try {
@@ -46,13 +53,17 @@ function DashboardPage() {
         
         // Get all cities data first
         const allCitiesData = await citiesAPI.getAllCitiesWithFood();
-        console.log('All cities from API:', allCitiesData?.cities?.map(c => ({ 
+        console.log('All cities from API:', allCitiesData);
+        
+        // Handle both possible response structures: direct array or object with cities property
+        const cities = Array.isArray(allCitiesData) ? allCitiesData : allCitiesData?.cities;
+        console.log('Processed cities:', cities?.map(c => ({ 
           id: c.id, 
           name: c.name, 
           hasFood: c.food ? c.food.length : 0 
         })));
         
-        if (!allCitiesData || !allCitiesData.cities) {
+        if (!cities || !Array.isArray(cities)) {
           setError('No cities data available');
           return;
         }
@@ -61,33 +72,41 @@ function DashboardPage() {
 
         // Handle different trip types
         switch (tripType) {
-          case TripTypes.PARIS_TOUR:
-            if (tripData?.route && Array.isArray(tripData.route)) {
-              citiesToShow = tripData.route.map(routeCityName => 
-                allCitiesData.cities.find(city => 
-                  city.name.toLowerCase() === routeCityName.toLowerCase()
-                )
-              ).filter(Boolean);
-              console.log('Paris tour - using route from backend:', citiesToShow.map(c => c.name));
-            } else {
-              citiesToShow = allCitiesData.cities;
-              console.log('Paris tour - fallback to all cities');
-            }
-            break;
+                  case TripTypes.PARIS_TOUR:
+          if (tripData?.trip?.cities && Array.isArray(tripData.trip.cities)) {
+            citiesToShow = tripData.trip.cities.map(tripCity => 
+              cities.find(city => 
+                city.name.toLowerCase() === tripCity.city_name.toLowerCase()
+              )
+            ).filter(Boolean);
+            console.log('Paris tour - using route from backend:', citiesToShow.map(c => c.name));
+          } else {
+            // Fallback: Ensure Paris is first, then add other cities
+            const parisCity = cities.find(city => 
+              city.name.toLowerCase() === 'paris'
+            );
+            const otherCities = cities.filter(city => 
+              city.name.toLowerCase() !== 'paris'
+            );
+            
+            citiesToShow = [parisCity, ...otherCities].filter(Boolean);
+            console.log('Paris tour - fallback with Paris first:', citiesToShow.map(c => c.name));
+          }
+          break;
 
           case TripTypes.LONDON_TOUR:
-            if (tripData?.route && Array.isArray(tripData.route)) {
-              citiesToShow = tripData.route.map(routeCityName => 
-                allCitiesData.cities.find(city => 
-                  city.name.toLowerCase() === routeCityName.toLowerCase()
+            if (tripData?.trip?.cities && Array.isArray(tripData.trip.cities)) {
+              citiesToShow = tripData.trip.cities.map(tripCity => 
+                cities.find(city => 
+                  city.name.toLowerCase() === tripCity.city_name.toLowerCase()
                 )
               ).filter(Boolean);
               console.log('London tour - using route from backend:', citiesToShow.map(c => c.name));
             } else {
-              const londonCity = allCitiesData.cities.find(city => 
+              const londonCity = cities.find(city => 
                 city.name.toLowerCase() === 'london'
               );
-              const otherCities = allCitiesData.cities.filter(city => 
+              const otherCities = cities.filter(city => 
                 city.name.toLowerCase() !== 'london'
               );
               
@@ -97,19 +116,19 @@ function DashboardPage() {
             break;
 
           case TripTypes.CUSTOM_TOUR:
-            if (tripData?.route && Array.isArray(tripData.route)) {
-              citiesToShow = tripData.route.map(routeCityName => 
-                allCitiesData.cities.find(city => 
-                  city.name.toLowerCase() === routeCityName.toLowerCase()
+            if (tripData?.trip?.cities && Array.isArray(tripData.trip.cities)) {
+              citiesToShow = tripData.trip.cities.map(tripCity => 
+                cities.find(city => 
+                  city.name.toLowerCase() === tripCity.city_name.toLowerCase()
                 )
               ).filter(Boolean);
               console.log('Custom tour - using route from backend:', citiesToShow.map(c => c.name));
             } else if (startingCity && selectedCities) {
-              const startCity = allCitiesData.cities.find(city => 
+              const startCity = cities.find(city => 
                 city.name.toLowerCase() === startingCity.toLowerCase()
               );
               const otherSelectedCities = selectedCities.map(cityName =>
-                allCitiesData.cities.find(city => 
+                cities.find(city => 
                   city.name.toLowerCase() === cityName.toLowerCase()
                 )
               ).filter(Boolean);
@@ -117,25 +136,35 @@ function DashboardPage() {
               citiesToShow = [startCity, ...otherSelectedCities].filter(Boolean);
               console.log('Custom tour fallback - manual selection:', citiesToShow.map(c => c.name));
             } else {
-              citiesToShow = allCitiesData.cities.slice(0, 5);
+              citiesToShow = cities.slice(0, 5);
               console.log('Custom tour - default fallback');
             }
             break;
 
-          case TripTypes.BERLIN_TOUR:
-            if (tripData?.route && Array.isArray(tripData.route)) {
-              citiesToShow = tripData.route.map(routeCityName => 
-                allCitiesData.cities.find(city => 
-                  city.name.toLowerCase() === routeCityName.toLowerCase()
-                )
-              ).filter(Boolean);
-            } else {
-              citiesToShow = allCitiesData.cities;
-            }
-            break;
+                  case TripTypes.BERLIN_TOUR:
+          if (tripData?.trip?.cities && Array.isArray(tripData.trip.cities)) {
+            citiesToShow = tripData.trip.cities.map(tripCity => 
+              cities.find(city => 
+                city.name.toLowerCase() === tripCity.city_name.toLowerCase()
+              )
+            ).filter(Boolean);
+            console.log('Berlin tour - using route from backend:', citiesToShow.map(c => c.name));
+          } else {
+            // Fallback: Ensure Berlin is first, then add other cities
+            const berlinCity = cities.find(city => 
+              city.name.toLowerCase() === 'berlin'
+            );
+            const otherCities = cities.filter(city => 
+              city.name.toLowerCase() !== 'berlin'
+            );
+            
+            citiesToShow = [berlinCity, ...otherCities].filter(Boolean);
+            console.log('Berlin tour - fallback with Berlin first:', citiesToShow.map(c => c.name));
+          }
+          break;
 
           default:
-            citiesToShow = allCitiesData.cities;
+            citiesToShow = cities;
         }
 
         console.log('Final cities to show:', citiesToShow.map(c => ({ 
@@ -171,6 +200,28 @@ function DashboardPage() {
   });
 }
 
+  // Add this debug function to test the food API
+  const testFoodAPI = async (cityId) => {
+    try {
+      console.log(`Testing food API for city ID: ${cityId}`);
+      const response = await fetch(`/api/cities/${cityId}/foods`);
+      console.log('Food API response status:', response.status);
+      console.log('Food API response headers:', response.headers);
+      
+      if (!response.ok) {
+        console.error('Food API error:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Food API error body:', errorText);
+        return;
+      }
+      
+      const data = await response.json();
+      console.log('Food API response data:', data);
+    } catch (error) {
+      console.error('Food API fetch error:', error);
+    }
+  };
+
   // Handle city click to expand/collapse and fetch food data
   const handleCityClick = async (city) => {
     try {
@@ -182,6 +233,9 @@ function DashboardPage() {
       } else {
         // Expand the city
         newExpandedCities.add(city.id);
+        
+        // Test the food API first
+        await testFoodAPI(city.id);
         
         // Fetch food data if not already loaded
         if (!cityFoodData[city.id] && (!city.food || city.food.length === 0)) {
@@ -230,24 +284,67 @@ function DashboardPage() {
     }
   };
 
-  const addFoodItem = (cityName, food) => {
+  // Replace your current addFoodItem function with this:
+const addFoodItem = (cityName, food) => {
+  const foodName = food.name || food.title || food.foodName || 'Unknown Food';
+  const foodPrice = parseFloat(food.price || food.cost || food.amount || 0);
+  
+  const existingItem = selectedFoodItems.find(item => 
+    item.cityName === cityName && item.foodName === foodName
+  );
+  
+  if (existingItem) {
+    // Increase quantity of existing item
+    setSelectedFoodItems(prev => prev.map(item => 
+      item.id === existingItem.id 
+        ? { ...item, quantity: (item.quantity || 1) + 1 }
+        : item
+    ));
+    setTotalCost(prev => prev + foodPrice);
+  } else {
+    // Add new item with quantity 1
     const newItem = {
       id: Date.now(),
       cityName,
-      foodName: food.name || food.title || food.foodName || 'Unknown Food',
-      price: parseFloat(food.price || food.cost || food.amount || 0)
+      foodName,
+      price: foodPrice,
+      quantity: 1
     };
     setSelectedFoodItems(prev => [...prev, newItem]);
-    setTotalCost(prev => prev + newItem.price);
-  };
+    setTotalCost(prev => prev + foodPrice);
+  }
+};
+  const getFoodQuantity = (cityName, foodName) => {
+  const item = selectedFoodItems.find(item => 
+    item.cityName === cityName && item.foodName === foodName
+  );
+  return item ? (item.quantity || 1) : 0;
+};
 
-  const removeFoodItem = (itemId) => {
-    const item = selectedFoodItems.find(item => item.id === itemId);
-    if (item) {
-      setSelectedFoodItems(prev => prev.filter(item => item.id !== itemId));
-      setTotalCost(prev => prev - item.price);
+// Add this function after getFoodQuantity (around line 257)
+const subtractFoodItem = (cityName, food) => {
+  const foodName = food.name || food.title || food.foodName || 'Unknown Food';
+  const foodPrice = parseFloat(food.price || food.cost || food.amount || 0);
+  
+  const existingItem = selectedFoodItems.find(item => 
+    item.cityName === cityName && item.foodName === foodName
+  );
+  
+  if (existingItem && (existingItem.quantity || 1) > 0) {
+    if ((existingItem.quantity || 1) === 1) {
+      // Remove item if quantity would become 0
+      setSelectedFoodItems(prev => prev.filter(item => item.id !== existingItem.id));
+    } else {
+      // Decrease quantity
+      setSelectedFoodItems(prev => prev.map(item => 
+        item.id === existingItem.id 
+          ? { ...item, quantity: (item.quantity || 1) - 1 }
+          : item
+      ));
     }
-  };
+    setTotalCost(prev => prev - foodPrice);
+  }
+};
 
   const getTripTypeDisplay = () => {
     switch(tripType) {
@@ -264,17 +361,18 @@ function DashboardPage() {
     }
   };
 
-    const getCitySpendingBreakdown = () => {
-    const cityTotals = {};
-    selectedFoodItems.forEach(item => {
-      if (cityTotals[item.cityName]) {
-        cityTotals[item.cityName] += item.price;
-      } else {
-        cityTotals[item.cityName] = item.price;
-      }
-    });
-    return cityTotals;
-  };
+   const getCitySpendingBreakdown = () => {
+  const cityTotals = {};
+  selectedFoodItems.forEach(item => {
+    const itemTotal = item.price * (item.quantity || 1);
+    if (cityTotals[item.cityName]) {
+      cityTotals[item.cityName] += itemTotal;
+    } else {
+      cityTotals[item.cityName] = itemTotal;
+    }
+  });
+  return cityTotals;
+};
 
   // Enhanced helper function to get total distance from different possible data structures
   const getTotalDistance = () => {
@@ -416,51 +514,92 @@ function DashboardPage() {
                         <p style={{ color: '#666', fontStyle: 'italic' }}>Loading food...</p>
                       ) : cityFood.length > 0 ? (
                         <ul style={{ listStyle: 'none', padding: 0 }}>
-                          {cityFood.map((food, index) => {
-                            const foodName = food.name || food.title || food.foodName || `Food Item ${index + 1}`;
-                            const foodPrice = parseFloat(food.price || food.cost || food.amount || 0);
-                            
-                            return (
-                              <li key={index} style={{ padding: '5px 0', borderBottom: '1px solid #ccc' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <span>
-                                    <strong>{foodName}</strong> - ${foodPrice.toFixed(2)}
+                    {cityFood.map((food, index) => {
+                      const foodName = food.name || food.title || food.foodName || `Food Item ${index + 1}`;
+                      const foodPrice = parseFloat(food.price || food.cost || food.amount || 0);
+                      const quantity = getFoodQuantity(city.name, foodName);
+                      
+                      return (
+                        <li key={index} style={{ padding: '5px 0', borderBottom: '1px solid #ccc' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', flex: 1 }}>
+                              <span>
+                                <strong>{foodName}</strong> - ${foodPrice.toFixed(2)}
+                                {quantity > 0 && (
+                                  <span style={{ 
+                                    marginLeft: '10px', 
+                                    color: '#4CAF50', 
+                                    fontWeight: 'bold' 
+                                  }}>
+                                    (Qty: {quantity})
                                   </span>
-                                  <button 
-                                    onClick={() => addFoodItem(city.name, { name: foodName, price: foodPrice })}
-                                    className="add-food-btn"
-                                    style={{
-                                      backgroundColor: '#f8f9fa',
-                                      color: '#212529',
-                                      border: '1px solid #dee2e6',
-                                      padding: '1px 4px',
-                                      borderRadius: '2px',
-                                      cursor: 'pointer',
-                                      fontSize: '9px',
-                                      fontWeight: 'normal',
-                                      width: '20px',
-                                      height: '20px',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      flexShrink: 0,
-                                      transition: 'all 0.2s'
-                                    }}
-                                    onMouseOver={(e) => {
-                                      e.target.style.backgroundColor = '#e9ecef';
-                                      e.target.style.borderColor = '#adb5bd';
-                                    }}
-                                    onMouseOut={(e) => {
-                                      e.target.style.backgroundColor = '#f8f9fa';
-                                      e.target.style.borderColor = '#dee2e6';
-                                    }}
-                                  >
-                                   +
-                                  </button>
-                                </div>
-                              </li>
-                            );
-                          })}
+                                )}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {/* Minus button - only show when quantity > 0 */}
+                              {quantity > 0 && (
+                                <button 
+                                  onClick={() => subtractFoodItem(city.name, { name: foodName, price: foodPrice })}
+                                  style={{
+                                    backgroundColor: '#f44336',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '3px',
+                                    padding: '2px 6px',
+                                    cursor: 'pointer',
+                                    fontSize: '12px',
+                                    width: '20px',
+                                    height: '20px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                  }}
+                                  title="Remove one"
+                                >
+                                  -
+                                </button>
+                              )}
+                              
+                              {/* Quantity display - only show when quantity > 0 */}
+                              {quantity > 0 && (
+                                <span style={{ 
+                                  minWidth: '20px', 
+                                  textAlign: 'center', 
+                                  fontWeight: 'bold',
+                                  color: '#4CAF50'
+                                }}>
+                                  {quantity}
+                                </span>
+                              )}
+                              
+                              {/* Plus button */}
+                              <button 
+                                onClick={() => addFoodItem(city.name, { name: foodName, price: foodPrice })}
+                                style={{
+                                  backgroundColor: '#4CAF50',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '3px',
+                                  padding: '2px 6px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  width: '20px',
+                                  height: '20px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                                title="Add one"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+           
                         </ul>
                       ) : (
                         <p style={{ color: '#666', fontStyle: 'italic' }}>No food options available</p>
@@ -481,7 +620,7 @@ function DashboardPage() {
 
       {/* RIGHT SIDE - SELECTED FOOD ITEMS */}
       <div id="rightContainer" style={{ flex: '1' }}>
-        <div className="header">Your Food Selections</div>
+        {/* <div className="header">Your Food Selections</div>
 
         <div id="selected-cities-result" className="container">
           {selectedFoodItems.length === 0 ? (
@@ -493,14 +632,14 @@ function DashboardPage() {
                   <strong>{item.foodName}</strong><br/>
                   <small>from {item.cityName}</small><br/>
                   <span>${item.price.toFixed(2)}</span>
-                </div>
-                <button 
+                </div> */}
+                {/* <button 
                   onClick={() => removeFoodItem(item.id)}
                   className="remove-btn"
                 >
                   Remove
-                </button>
-              </div>
+                </button> */}
+              {/* </div>
             ))
           )}
           
@@ -509,7 +648,7 @@ function DashboardPage() {
               <strong>Total Food Cost: ${totalCost.toFixed(2)}</strong>
             </div>
           )}
-        </div>
+        </div> */}
 
               {/* Trip Summary in Right Panel */}
         <div style={{ 

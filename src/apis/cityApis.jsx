@@ -10,7 +10,7 @@ export const citiesAPI = {
   },
   
   getAllCitiesWithFood: async () => {
-    const response = await fetch('/api/cities/food');
+    const response = await fetch('/api/cities');
     if (!response.ok) {
       throw new Error(`Failed to fetch cities: ${response.status} ${response.statusText}`);
     }

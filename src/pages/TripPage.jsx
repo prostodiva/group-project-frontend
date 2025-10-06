@@ -271,20 +271,38 @@ const TripPage = () => {
           </div>
           
           <div className="input-group">
-            <label>Cities to Visit:</label>
-            <div className="city-selection">
+            <label>Cities to Visit (Select from all 13 cities):</label>
+            <div className="city-selection" style={{ 
+              maxHeight: '200px', 
+              overflowY: 'auto', 
+              border: '1px solid #ddd', 
+              padding: '10px',
+              borderRadius: '5px'
+            }}>
               {availableCities
                 .filter(city => city !== customStartCity)
                 .map(city => (
-                <label key={city} className="city-checkbox">
+                <label key={city} className="city-checkbox" style={{ 
+                  display: 'block', 
+                  marginBottom: '5px',
+                  cursor: 'pointer'
+                }}>
                   <input
                     type="checkbox"
                     checked={selectedCities.includes(city)}
                     onChange={() => toggleCitySelection(city)}
+                    style={{ marginRight: '8px' }}
                   />
                   {city}
                 </label>
               ))}
+            </div>
+            <div style={{ 
+              marginTop: '10px', 
+              fontSize: '12px', 
+              color: '#666' 
+            }}>
+              Selected: {selectedCities.length} cities
             </div>
           </div>
           
@@ -293,7 +311,7 @@ const TripPage = () => {
               type="button"
               value="Start Custom Tour"
               onClick={handleCustomTour}
-              disabled={isLoading}
+              disabled={isLoading || !customStartCity || selectedCities.length === 0}
             />
             <Input
               type="button"

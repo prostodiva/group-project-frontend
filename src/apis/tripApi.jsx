@@ -39,11 +39,44 @@ export const tripAPI = {
 
   // Plan custom tour with selected cities
   planCustomTour: async (startingCity, selectedCities) => {
+    // Convert city names to city IDs
+    // First, we need to get the city mapping
+    const citiesResponse = await fetch('/api/cities');
+    const citiesData = await citiesResponse.json();
+    
+    let allCities = [];
+    if (citiesData && citiesData.cities) {
+      allCities = citiesData.cities;
+    } else if (citiesData && Array.isArray(citiesData)) {
+      allCities = citiesData;
+    }
+    
+    // Find city IDs for the starting city and selected cities
+    const startCity = allCities.find(city => 
+      city.name.toLowerCase() === startingCity.toLowerCase()
+    );
+    
+    const selectedCityIds = selectedCities.map(cityName => {
+      const city = allCities.find(c => 
+        c.name.toLowerCase() === cityName.toLowerCase()
+      );
+      return city ? city.id : null;
+    }).filter(id => id !== null);
+    
+    if (!startCity) {
+      throw new Error(`Starting city "${startingCity}" not found`);
+    }
+    
+    if (selectedCityIds.length === 0) {
+      throw new Error('No valid cities selected');
+    }
+    
     const requestBody = {
-      startingCity: startingCity,
-      cities: selectedCities,
-      tripType: TripTypes.CUSTOM_TOUR
+      start_city_id: startCity.id,
+      city_ids: selectedCityIds
     };
+    
+    console.log('Custom tour request body:', requestBody);
     
     const response = await fetch('/api/trips/custom', {
       method: 'POST',
@@ -54,6 +87,8 @@ export const tripAPI = {
     });
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Custom tour error response:', errorText);
       throw new Error(`Failed to plan custom tour: ${response.status} ${response.statusText}`);
     }
     return await response.json();
