@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { citiesAPI } from "../apis/cityApis";
 import { tripAPI, TripTypes } from "../apis/tripApi";
 import Input from "../components/Input";
 import "../style/trip.css";
@@ -8,13 +9,47 @@ const TripPage = () => {
   const navigate = useNavigate();
   const [selectedTripType, setSelectedTripType] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [numberOfCities, setNumberOfCities] = useState('');
+  const [availableCities, setAvailableCities] = useState([]);
   const [customStartCity, setCustomStartCity] = useState('');
   const [selectedCities, setSelectedCities] = useState([]);
-  const [availableCities] = useState([
-    'Paris', 'London', 'Berlin', 'Rome', 'Madrid', 'Amsterdam', 
-    'Vienna', 'Prague', 'Budapest', 'Warsaw', 'Stockholm'
-  ]);
+  const [customTripMode, setCustomTripMode] = useState('11cities');
+  const [numberOfCities, setNumberOfCities] = useState('');
+
+  // Load cities when component mounts
+  useEffect(() => {
+    const loadCities = async () => {
+      try {
+        const citiesData = await citiesAPI.getAllCitiesWithFood();
+        console.log('Cities data loaded:', citiesData);
+        
+        if (citiesData && citiesData.cities) {
+          setAvailableCities(citiesData.cities);
+        } else if (citiesData && Array.isArray(citiesData)) {
+          setAvailableCities(citiesData);
+        }
+      } catch (error) {
+        console.error('Failed to load cities:', error);
+        // Set a fallback list of cities if API fails
+        setAvailableCities([
+          { id: 1, name: 'Amsterdam' },
+          { id: 2, name: 'Berlin' },
+          { id: 3, name: 'Brussels' },
+          { id: 4, name: 'Budapest' },
+          { id: 5, name: 'Hamburg' },
+          { id: 6, name: 'Lisbon' },
+          { id: 7, name: 'London' },
+          { id: 8, name: 'Madrid' },
+          { id: 9, name: 'Paris' },
+          { id: 10, name: 'Prague' },
+          { id: 11, name: 'Rome' },
+          { id: 12, name: 'Stockholm' },
+          { id: 13, name: 'Vienna' }
+        ]);
+      }
+    };
+
+    loadCities();
+  }, []);
 
   const handleTripTypeSelect = (tripType) => {
     setSelectedTripType(tripType);
@@ -102,7 +137,7 @@ const TripPage = () => {
           tripData: tripData,
           startingCity: customStartCity,
           selectedCities: selectedCities,
-          description: `Custom Tour - Starting from ${customStartCity}, visiting ${selectedCities.length} cities`,
+          description: `Custom Tour (${customTripMode}) - Starting from ${customStartCity}, visiting ${selectedCities.length} cities`,
         } 
       });
     } catch (error) {
@@ -119,6 +154,24 @@ const TripPage = () => {
         ? prev.filter(c => c !== city)
         : [...prev, city]
     );
+  };
+
+  // Get cities based on selected mode
+  const getAvailableCitiesForMode = () => {
+    if (customTripMode === '11cities') {
+      // Exclude Vienna (id: 13) and Stockholm (id: 12)
+      return availableCities.filter(city => city.id !== 12 && city.id !== 13);
+    } else {
+      // Include all 13 cities
+      return availableCities;
+    }
+  };
+
+  // Reset selections when mode changes
+  const handleModeChange = (mode) => {
+    setCustomTripMode(mode);
+    setCustomStartCity('');
+    setSelectedCities([]);
   };
 
   return (
@@ -257,6 +310,35 @@ const TripPage = () => {
       {selectedTripType === TripTypes.CUSTOM_TOUR && (
         <div className="trip-config">
           <h3>Custom Tour Configuration</h3>
+          
+          <div className="input-group">
+            <label>Trip Mode:</label>
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '10px' }}>
+                <input
+                  type="radio"
+                  name="customMode"
+                  value="11cities"
+                  checked={customTripMode === '11cities'}
+                  onChange={(e) => handleModeChange(e.target.value)}
+                  style={{ marginRight: '8px' }}
+                />
+                Option 1: Choose from 11 cities (excluding Vienna and Stockholm)
+              </label>
+              <label style={{ display: 'block' }}>
+                <input
+                  type="radio"
+                  name="customMode"
+                  value="13cities"
+                  checked={customTripMode === '13cities'}
+                  onChange={(e) => handleModeChange(e.target.value)}
+                  style={{ marginRight: '8px' }}
+                />
+                Option 2: Choose from all 13 cities (including Vienna and Stockholm)
+              </label>
+            </div>
+          </div>
+
           <div className="input-group">
             <label>Starting City:</label>
             <select 
@@ -264,14 +346,14 @@ const TripPage = () => {
               onChange={(e) => setCustomStartCity(e.target.value)}
             >
               <option value="">Select starting city</option>
-              {availableCities.map(city => (
-                <option key={city} value={city}>{city}</option>
+              {getAvailableCitiesForMode().map(city => (
+                <option key={city.id} value={city.name}>{city.name}</option>
               ))}
             </select>
           </div>
           
           <div className="input-group">
-            <label>Cities to Visit (Select from all 13 cities):</label>
+            <label>Cities to Visit (Select from {customTripMode === '11cities' ? '11' : '13'} cities):</label>
             <div className="city-selection" style={{ 
               maxHeight: '200px', 
               overflowY: 'auto', 
@@ -279,21 +361,21 @@ const TripPage = () => {
               padding: '10px',
               borderRadius: '5px'
             }}>
-              {availableCities
-                .filter(city => city !== customStartCity)
+              {getAvailableCitiesForMode()
+                .filter(city => city.name !== customStartCity)
                 .map(city => (
-                <label key={city} className="city-checkbox" style={{ 
+                <label key={city.id} className="city-checkbox" style={{ 
                   display: 'block', 
                   marginBottom: '5px',
                   cursor: 'pointer'
                 }}>
                   <input
                     type="checkbox"
-                    checked={selectedCities.includes(city)}
-                    onChange={() => toggleCitySelection(city)}
+                    checked={selectedCities.includes(city.name)}
+                    onChange={() => toggleCitySelection(city.name)}
                     style={{ marginRight: '8px' }}
                   />
-                  {city}
+                  {city.name}
                 </label>
               ))}
             </div>
@@ -309,7 +391,7 @@ const TripPage = () => {
           <div className="button-group">
             <Input
               type="button"
-              value="Start Custom Tour"
+              value={`Start Custom Tour`}
               onClick={handleCustomTour}
               disabled={isLoading || !customStartCity || selectedCities.length === 0}
             />

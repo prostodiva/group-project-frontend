@@ -529,7 +529,8 @@ const subtractFoodItem = (cityName, food) => {
                                   <span style={{ 
                                     marginLeft: '10px', 
                                     color: '#4CAF50', 
-                                    fontWeight: 'bold' 
+                                    fontWeight: 'bold', 
+                                    fontSize: '18px'
                                   }}>
                                     (Qty: {quantity})
                                   </span>

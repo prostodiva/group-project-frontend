@@ -225,8 +225,8 @@ const HomePage = () => {
                     <span style={{ display: 'block', flex: '1', marginLeft: '10px' }}>{city.name}</span>
                   </div>
                   <span style={{ 
-                    fontSize: '14px', 
-                    color: '#2E7D32', 
+                    fontSize: '18px', 
+                    color: '#e7e9e7ff', 
                     fontWeight: 'bold',
                     marginRight: '10px'
                   }}>
