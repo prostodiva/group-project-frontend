@@ -72,9 +72,15 @@ const LoginPage = () => {
         />
         {errors.password && <div className="error">{errors.password}</div>}
 
-        {/* BUTTON - LOGIN */}
-        <button type="submit" >Login
-        </button>
+        {/* BUTTONS CONTAINER */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {/* BUTTON - TRAVELER */}
+          <button type="submit" >Enter as Traveler</button>
+
+          {/* BUTTON - LOGIN */}
+          <button type="submit" >Login as Admin</button>
+        </div>
+        
       </form>
     </div>
   );
