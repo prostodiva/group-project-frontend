@@ -25,7 +25,7 @@ body {
   border-width: 0px 15px;
   border-style: double;
   border-color: var(--dark-brown);
-  flex-grow: 3;
+  width: 60vh;
 }
 
 /* Right side container - holding title, selected cities and submit button */
@@ -33,33 +33,58 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-width: 200px;
+  width: 50vh;
   margin: 0px 50px;
 }
 
-/* Selected cities result box */
-.container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  margin: 0px 0px 10px;
+/* Trip summary container - matches CreateTrip styling */
+.trip-summary {
+  background-color: var(--background);
   padding: 15px;
+  border-radius: 15px;
+  box-shadow: var(--box-shadow);
+  border: var(--border-style);
+  margin-bottom: 15px;
+  flex-shrink: 0;
 }
 
-/* Create my trip button */
-#submit {
+/* Cities route container - matches CreateTrip scrollable styling */
+.cities-route-container {
+  padding: 5px;
+  overflow-y: auto;
+  max-height: 400px;
+  flex: 1;
+}
+
+/* Scrollbar for cities route container */
+.cities-route-container::-webkit-scrollbar { width: 6px; }
+.cities-route-container::-webkit-scrollbar-track { background: var(--background); border-radius: 4px; }
+.cities-route-container::-webkit-scrollbar-thumb { background: var(--secondary-brown); border-radius: 4px; }
+.cities-route-container::-webkit-scrollbar-thumb:hover { background: var(--primary-brown); }
+
+/* Selected food items container - matches CreateTrip styling */
+.selected-cities-scroll-container {
+  background-color: var(--background);
+  border-radius: 15px;
+  box-shadow: var(--box-shadow);
   border: var(--border-style);
-  background-color: var(--secondary-brown);
-  border-radius: var(--border-radius);
-  color: var(--default-text-color);
-  padding: 10px 15px;
-  text-align: left;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 16px;
-  cursor: pointer;
-  font-family: var(--body-font);
-  align-self: end;
+  padding: 15px;
+  overflow-y: auto;
+  max-height: 300px;
+  flex: 1;
+  margin: 10px 0px;
+}
+
+/* Scrollbar for selected food items container */
+.selected-cities-scroll-container::-webkit-scrollbar { width: 6px; }
+.selected-cities-scroll-container::-webkit-scrollbar-track { background: var(--background); border-radius: 4px; }
+.selected-cities-scroll-container::-webkit-scrollbar-thumb { background: var(--secondary-brown); border-radius: 4px; }
+.selected-cities-scroll-container::-webkit-scrollbar-thumb:hover { background: var(--primary-brown); }
+
+.dash-food-container {
+  display: flex;
+  padding: 0px 10px; 
+  margin: 0px 5px;
 }
 
 /* City name box styling */
@@ -73,7 +98,7 @@ body {
   border: var(--border-style);
   box-shadow: var(--box-shadow);
   border-radius: var(--border-radius);
-  color: var(--default-text-color);
+  color: var(--dark-brown);
 }
 
 /* Plus button and minus button styling */
@@ -81,8 +106,8 @@ body {
   background-color: var(--primary-brown);
   color: var(--default-text-color);
   border: none;
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;

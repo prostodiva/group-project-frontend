@@ -1,5 +1,8 @@
+// DashboardPage.jsx
+// User selected trip summary, food selection, cost breakdown
+
 import { useEffect, useState } from "react";
-import { FaChevronDown } from "react-icons/fa";
+import { FaChevronDown, FaChevronUp, FaPlus, FaMinus } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
 import { citiesAPI } from "../apis/cityApis";
 import { TripTypes } from "../apis/tripApi";
@@ -18,34 +21,40 @@ function DashboardPage() {
   const [cityFoodData, setCityFoodData] = useState({});
   const [expandedCities, setExpandedCities] = useState(new Set()); // Track expanded cities
   const [loadingFood, setLoadingFood] = useState(new Set()); // Track cities loading food
+  const [cityDistances, setCityDistances] = useState({}); // Store city distances
+  const [searchTerm, setSearchTerm] = useState(''); // Search functionality
+  // Local input state for per-food quantity edits
+  const [quantityInputs, setQuantityInputs] = useState({});
 
   // Debug: Log the trip data when component mounts
-
-    useEffect(() => {
-      console.log('=== DASHBOARD DEBUG INFO ===');
-      console.log('Trip Type:', tripType);
-      console.log('Trip Data:', tripData);
-      console.log('Number of Cities (London):', numberOfCities);
-      console.log('Starting City (Custom):', startingCity);
-      console.log('Selected Cities (Custom):', selectedCities);
-      console.log('Description:', description);
+  useEffect(() => {
+    console.log('=== DASHBOARD DEBUG INFO ===');
+    console.log('Trip Type:', tripType);
+    console.log('Trip Data:', tripData);
+    console.log('Number of Cities (London):', numberOfCities);
+    console.log('Starting City (Custom):', startingCity);
+    console.log('Selected Cities (Custom):', selectedCities);
+    console.log('Description:', description);
+    
+    if (tripData) {
+      console.log('Available properties in tripData:', Object.keys(tripData));
+      console.log('Trip route from backend:', tripData.trip?.cities);
+      console.log('Trip cities from backend:', tripData.trip?.cities);
+      console.log('Trip itinerary from backend:', tripData.itinerary);
       
-      if (tripData) {
-        console.log('Available properties in tripData:', Object.keys(tripData));
-        console.log('Trip route from backend:', tripData.trip?.cities);
-        console.log('Trip cities from backend:', tripData.trip?.cities);
-        console.log('Trip itinerary from backend:', tripData.itinerary);
-        
-        // Add this detailed route logging
-        if (tripData.trip?.cities && Array.isArray(tripData.trip.cities)) {
-          console.log('=== ROUTE DETAILS ===');
-          console.log('Route length:', tripData.trip.cities.length);
-          console.log('Route cities:', tripData.trip.cities.map(c => c.city_name));
-          console.log('Expected Paris route: Paris, Brussels, Amsterdam, Hamburg, Berlin, Prague, Budapest, Rome, London, Madrid, Lisbon');
-        }
+      // Add this detailed route logging
+      if (tripData.trip?.cities && Array.isArray(tripData.trip.cities)) {
+        console.log('=== ROUTE DETAILS ===');
+        console.log('Route length:', tripData.trip.cities.length);
+        console.log('Route cities:', tripData.trip.cities.map(c => c.city_name));
+        console.log('Expected Paris route: Paris, Brussels, Amsterdam, Hamburg, Berlin, Prague, Budapest, Rome, London, Madrid, Lisbon');
       }
-      console.log('=== END DEBUG INFO ===');
-    }, [tripData, tripType, numberOfCities, startingCity, selectedCities]);
+    }
+    console.log('=== END DEBUG INFO ===');
+  }, [tripData, tripType, numberOfCities, startingCity, selectedCities]);
+
+
+  // Getting cities in the trip based on trip type
   useEffect(() => {
     const fetchTripCities = async () => {
       try {
@@ -187,6 +196,42 @@ function DashboardPage() {
     fetchTripCities();
   }, [tripData, tripType, numberOfCities, startingCity, selectedCities]);
 
+
+  // Fetch city distances when tripCities changes
+  useEffect(() => {
+    const fetchCityDistances = async () => {
+      if (!tripCities || tripCities.length < 2) {
+        setCityDistances({});
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/cities/distances');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch distances: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        // Convert array of distances to a lookup map
+        const distanceMap = {};
+        if (data.distances && Array.isArray(data.distances)) {
+          data.distances.forEach(dist => {
+            const key = `${dist.from_city_id}-${dist.to_city_id}`;
+            distanceMap[key] = dist.distance;
+          });
+        }
+        
+        setCityDistances(distanceMap);
+        console.log('Loaded city distances:', distanceMap);
+      } catch (err) {
+        console.error('Failed to fetch city distances:', err);
+        setCityDistances({});
+      }
+    };
+
+    fetchCityDistances();
+  }, [tripCities]);
+
   const handleSubmit = () => {
   navigate("/summary", {
     state: {
@@ -284,7 +329,7 @@ function DashboardPage() {
     }
   };
 
-  // Replace your current addFoodItem function with this:
+// Incrementing Food Item
 const addFoodItem = (cityName, food) => {
   const foodName = food.name || food.title || food.foodName || 'Unknown Food';
   const foodPrice = parseFloat(food.price || food.cost || food.amount || 0);
@@ -301,6 +346,14 @@ const addFoodItem = (cityName, food) => {
         : item
     ));
     setTotalCost(prev => prev + foodPrice);
+    // Clear any stale manual input so UI reflects updated quantity
+    const key = `${cityName}::${foodName}`;
+    setQuantityInputs(prev => {
+      if (prev[key] === undefined) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   } else {
     // Add new item with quantity 1
     const newItem = {
@@ -312,6 +365,13 @@ const addFoodItem = (cityName, food) => {
     };
     setSelectedFoodItems(prev => [...prev, newItem]);
     setTotalCost(prev => prev + foodPrice);
+    const key = `${cityName}::${foodName}`;
+    setQuantityInputs(prev => {
+      if (prev[key] === undefined) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   }
 };
   const getFoodQuantity = (cityName, foodName) => {
@@ -321,7 +381,7 @@ const addFoodItem = (cityName, food) => {
   return item ? (item.quantity || 1) : 0;
 };
 
-// Add this function after getFoodQuantity (around line 257)
+// Decrementing Food Item
 const subtractFoodItem = (cityName, food) => {
   const foodName = food.name || food.title || food.foodName || 'Unknown Food';
   const foodPrice = parseFloat(food.price || food.cost || food.amount || 0);
@@ -343,7 +403,64 @@ const subtractFoodItem = (cityName, food) => {
       ));
     }
     setTotalCost(prev => prev - foodPrice);
+    const key = `${cityName}::${foodName}`;
+    setQuantityInputs(prev => {
+      if (prev[key] === undefined) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   }
+};
+
+// Directly set a food quantity (used by input Enter key)
+const setFoodQuantity = (cityName, food, newQtyRaw) => {
+  // Allow blank/undefined to mean 0
+  let newQty = parseInt(newQtyRaw, 10);
+  if (isNaN(newQty) || newQty < 0) newQty = 0;
+
+  const foodName = food.name || food.title || food.foodName || 'Unknown Food';
+  const foodPrice = parseFloat(food.price || food.cost || food.amount || 0);
+
+  const existingItem = selectedFoodItems.find(item => 
+    item.cityName === cityName && item.foodName === foodName
+  );
+
+  if (existingItem) {
+    const oldQty = existingItem.quantity || 1;
+    if (newQty === 0) {
+      // Remove item and adjust cost
+      setSelectedFoodItems(prev => prev.filter(item => item.id !== existingItem.id));
+      setTotalCost(prev => prev - oldQty * foodPrice);
+    } else if (newQty !== oldQty) {
+      setSelectedFoodItems(prev => prev.map(item => 
+        item.id === existingItem.id ? { ...item, quantity: newQty } : item
+      ));
+      const delta = (newQty - oldQty) * foodPrice;
+      setTotalCost(prev => prev + delta);
+    }
+  } else {
+    if (newQty > 0) {
+      // Add new item with specified quantity
+      const newItem = {
+        id: Date.now(),
+        cityName,
+        foodName,
+        price: foodPrice,
+        quantity: newQty
+      };
+      setSelectedFoodItems(prev => [...prev, newItem]);
+      setTotalCost(prev => prev + newQty * foodPrice);
+    }
+  }
+  // Clear manual input cache after saving so display syncs with state
+  const key = `${cityName}::${foodName}`;
+  setQuantityInputs(prev => {
+    if (prev[key] === undefined) return prev;
+    const next = { ...prev };
+    delete next[key];
+    return next;
+  });
 };
 
   const getTripTypeDisplay = () => {
@@ -408,6 +525,34 @@ const subtractFoodItem = (cityName, food) => {
     return [];
   };
 
+  // Helper function to get distance between two cities
+  const getDistanceBetweenCities = (fromCityId, toCityId) => {
+    const key = `${fromCityId}-${toCityId}`;
+    return cityDistances[key] || null;
+  };
+
+  // Search function to scroll to city
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (!searchTerm.trim()) return;
+
+    const foundCityIndex = tripCities.findIndex(city => 
+      city.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    if (foundCityIndex !== -1) {
+      const cityElement = document.getElementById(`city-${tripCities[foundCityIndex].id}`);
+      if (cityElement) {
+        cityElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }
+    } else {
+      alert(`City "${searchTerm}" not found in your route.`);
+    }
+  };
+
   if (!tripData) {
     return (
       <div>
@@ -423,36 +568,36 @@ const subtractFoodItem = (cityName, food) => {
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       {/* LEFT SIDE - TRIP DETAILS AND CITIES IN YOUR ROUTE */}
       <div id="leftBG" style={{ flex: '2' }}>
-        <div className="header">Your European Vacation Plan</div>
+        <div className="title">{getTripTypeDisplay()}</div>
         
-        {/* Trip Summary */}
-        <div className="trip-summary">
-      
-          
-          {/* Show trip-specific information */}
-          {tripType === TripTypes.LONDON_TOUR && (
-            <div style={{ backgroundColor: '#e3f2fd', padding: '10px', borderRadius: '5px', margin: '10px 0' }}>
-              <strong>🇬🇧 London Tour:</strong> Visiting {numberOfCities || 'selected number of'} cities starting from London
-            </div>
-          )}
-          
-          {tripType === TripTypes.CUSTOM_TOUR && startingCity && selectedCities && (
-            <div style={{ backgroundColor: '#f3e5f5', padding: '10px', borderRadius: '5px', margin: '10px 0' }}>
-              <strong>🎯 Custom Tour:</strong> Starting from {startingCity}, visiting: {selectedCities.join(', ')}
-            </div>
-          )}
-        </div>
-
-        {/* Cities in Your Trip Route with Food - Using HomePage container styling */}
-        <div className="header">
-          Cities in Your Trip Route 
-          <span style={{ fontSize: '14px', color: '#666', marginLeft: '10px' }}>
-            ({tripCities.length} cities - Click to view food options)
-          </span>
+        {/* Search Feature */}
+        <div style={{ padding: '5px 20px', borderBottom: '1px solid var(--dark-brown)' }}>
+          <form onSubmit={handleSearch} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div className="sub-header" 
+              style={{ marginRight: '10px',
+                       fontSize: '14px',
+                       whiteSpace: 'nowrap' }}
+            >Search City:</div>
+            <input
+              type="text"
+              placeholder="Search for a city..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            <button
+              type="submit"
+              style={{
+                width: 'auto',
+                borderRadius: '5px',
+              }}
+            >
+              Find
+            </button>
+          </form>
         </div>
         
         {/* Apply HomePage container styling to cities section */}
-        <div style={{ overflow: 'auto', maxHeight: '600px', width: '100%' }}>
+        <div className="cities-list" style={{ width: '70vh' }}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '20px' }}>
               Loading cities in your route...
@@ -468,7 +613,7 @@ const subtractFoodItem = (cityName, food) => {
               const isLoadingFood = loadingFood.has(city.id);
               
               return (
-                <div key={city.id}>
+                <div key={city.id} id={`city-${city.id}`} style={{ justifyContent: 'space-between' }}>
                   {/* City Button - Using HomePage button styling */}
                   <button 
                     onClick={() => handleCityClick(city)}
@@ -476,40 +621,56 @@ const subtractFoodItem = (cityName, food) => {
                     aria-label={`${expandedCities.has(city.id) ? 'Collapse' : 'Expand'} food options for ${city.name}`}
                     style={{
                       display: 'flex',
-                      alignItems: 'center'
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      width: '100%'
                     }}
                   >
-                    <FaChevronDown 
-                      aria-hidden="true"
-                      style={{ marginRight: '10px' }}
-                    />
-                    <span style={{ 
-                      backgroundColor: '#4CAF50', 
-                      color: 'white', 
-                      borderRadius: '50%', 
-                      width: '20px', 
-                      height: '20px', 
-                      display: 'inline-flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      marginRight: '8px',
-                      fontSize: '10px',
-                      fontWeight: 'bold'
-                    }}>
-                      {routeIndex + 1}
-                    </span>
-                    <span style={{ flex: 1 }}>
-                      {city.name}
-                      <span style={{ fontSize: '12px', color: '#666', marginLeft: '10px' }}>
-                        {routeIndex === 0 ? '(Starting City)' : `(Stop ${routeIndex})`}
+                    {/* Left section: Icon + Route Index + City Name */}
+                    <div style={{ display: 'flex', alignItems: 'center', flex: '1' }}>
+                      {isExpanded ? (
+                        <FaChevronUp 
+                          aria-hidden="true"
+                          style={{ marginRight: '10px' }}
+                        />
+                      ) : (
+                        <FaChevronDown 
+                          aria-hidden="true"
+                          style={{ marginRight: '10px' }}
+                        />
+                      )}
+                      <span style={{ marginRight: '5px' }}>
+                        {routeIndex + 1}.
                       </span>
-                    </span>
+                      <span>
+                        {city.name}
+                      </span>
+                    </div>
+
+                    {/* Center section: Distance from Previous City */}
+                    <div style={{ flex: '1', textAlign: 'center' }}>
+                      {routeIndex > 0 && (
+                        <span>
+                          {(() => {
+                            const prevCity = tripCities[routeIndex - 1];
+                            const distance = getDistanceBetweenCities(prevCity.id, city.id);
+                            return distance ? `${distance} km` : 'calculating...';
+                          })()}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Right section: Food Spent Total */}
+                    <div style={{ flex: '1', textAlign: 'right' }}>
+                      <span>
+                        ${(getCitySpendingBreakdown()[city.name] || 0).toFixed(2)}
+                      </span>
+                    </div>
                   </button>
                   
                   {/* Food Options - Only shown when expanded */}
                   {expandedCities.has(city.id) && (
-                    <div style={{ paddingLeft: '20px', marginBottom: '10px' }}>
-                      <h4 className="header">Food Options:</h4>
+                    <div className="food-container">
                       {isLoadingFood ? (
                         <p style={{ color: '#666', fontStyle: 'italic' }}>Loading food...</p>
                       ) : cityFood.length > 0 ? (
@@ -522,78 +683,52 @@ const subtractFoodItem = (cityName, food) => {
                       return (
                         <li key={index} style={{ padding: '5px 0', borderBottom: '1px solid #ccc' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', flex: 1 }}>
-                              <span>
+                            <div  className="food-name" style={{ display: 'flex', justifyContent: 'space-between', flex: 1 }}>
+                              <span style={{ borderBottom: 'none' }}>
                                 <strong>{foodName}</strong> - ${foodPrice.toFixed(2)}
-                                {quantity > 0 && (
-                                  <span style={{ 
-                                    marginLeft: '10px', 
-                                    color: '#4CAF50', 
-                                    fontWeight: 'bold', 
-                                    fontSize: '18px'
-                                  }}>
-                                    (Qty: {quantity})
-                                  </span>
-                                )}
                               </span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              {/* Minus button - only show when quantity > 0 */}
-                              {quantity > 0 && (
-                                <button 
-                                  onClick={() => subtractFoodItem(city.name, { name: foodName, price: foodPrice })}
-                                  style={{
-                                    backgroundColor: '#f44336',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '3px',
-                                    padding: '2px 6px',
-                                    cursor: 'pointer',
-                                    fontSize: '12px',
-                                    width: '20px',
-                                    height: '20px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                  }}
-                                  title="Remove one"
-                                >
-                                  -
-                                </button>
-                              )}
-                              
-                              {/* Quantity display - only show when quantity > 0 */}
-                              {quantity > 0 && (
-                                <span style={{ 
-                                  minWidth: '20px', 
-                                  textAlign: 'center', 
-                                  fontWeight: 'bold',
-                                  color: '#4CAF50'
-                                }}>
-                                  {quantity}
-                                </span>
-                              )}
-                              
+                              {/* Minus button - keep behavior */}
+                              <button 
+                                onClick={() => subtractFoodItem(city.name, { name: foodName, price: foodPrice })}
+                                className="food-button food-minus-button"
+                                title="Remove one"
+                                disabled={quantity <= 0}
+                              >
+                                <FaMinus />
+                              </button>
+
+                              {/* Quantity input - always visible, Enter to save */}
+                              <input
+                                type="text" // use text to avoid native number spinners
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                value={
+                                  quantityInputs[`${city.name}::${foodName}`] ?? quantity
+                                }
+                                onChange={(e) => {
+                                  const key = `${city.name}::${foodName}`;
+                                  setQuantityInputs(prev => ({ ...prev, [key]: e.target.value }));
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    const key = `${city.name}::${foodName}`;
+                                    const value = quantityInputs[key] ?? quantity;
+                                    setFoodQuantity(city.name, { name: foodName, price: foodPrice }, value);
+                                  }
+                                }}
+                                style={{ width: '60px', textAlign: 'center' }}
+                                aria-label={`Set quantity for ${foodName}`}
+                              />
+
                               {/* Plus button */}
                               <button 
                                 onClick={() => addFoodItem(city.name, { name: foodName, price: foodPrice })}
-                                style={{
-                                  backgroundColor: '#4CAF50',
-                                  color: 'white',
-                                  border: 'none',
-                                  borderRadius: '3px',
-                                  padding: '2px 6px',
-                                  cursor: 'pointer',
-                                  fontSize: '12px',
-                                  width: '20px',
-                                  height: '20px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center'
-                                }}
+                                className="food-button"
                                 title="Add one"
                               >
-                                +
+                                <FaPlus />
                               </button>
                             </div>
                           </div>
@@ -621,44 +756,10 @@ const subtractFoodItem = (cityName, food) => {
 
       {/* RIGHT SIDE - SELECTED FOOD ITEMS */}
       <div id="rightContainer" style={{ flex: '1' }}>
-        {/* <div className="header">Your Food Selections</div>
-
-        <div id="selected-cities-result" className="container">
-          {selectedFoodItems.length === 0 ? (
-            <p>No food items selected yet. Click on cities to view and add food options.</p>
-          ) : (
-            selectedFoodItems.map((item) => (
-              <div key={item.id} className="selected-food-item">
-                <div>
-                  <strong>{item.foodName}</strong><br/>
-                  <small>from {item.cityName}</small><br/>
-                  <span>${item.price.toFixed(2)}</span>
-                </div> */}
-                {/* <button 
-                  onClick={() => removeFoodItem(item.id)}
-                  className="remove-btn"
-                >
-                  Remove
-                </button> */}
-              {/* </div>
-            ))
-          )}
-          
-          {selectedFoodItems.length > 0 && (
-            <div className="total-cost">
-              <strong>Total Food Cost: ${totalCost.toFixed(2)}</strong>
-            </div>
-          )}
-        </div> */}
-
               {/* Trip Summary in Right Panel */}
-        <div style={{ 
-          backgroundColor: '#f5f5f5', 
-          padding: '10px', 
-          borderRadius: '5px',
-          marginBottom: '15px'
-        }}>
-          <h4 style={{ margin: '0 0 10px 0' }}>Trip Summary</h4>
+        <h4 className="header" style={{ margin: '0 0 10px 0' }}>Trip Summary</h4>
+        <div className="trip-des" style={{ backgroundColor: 'var(--background)'}}>
+          
           <p style={{ margin: '5px 0' }}><strong>Type:</strong> {getTripTypeDisplay()}</p>
           {totalDistance ? (
             <p style={{ margin: '5px 0'}}>
@@ -675,31 +776,13 @@ const subtractFoodItem = (cityName, food) => {
           <p style={{ margin: '5px 0'}}>
             <strong>Cities in Route:</strong> {tripCities.length}
           </p>
-          {/* City Spending Breakdown */}
-          {selectedFoodItems.length > 0 && (
-            <div style={{ marginTop: '10px' }}>
-              <p style={{ margin: '5px 0', fontWeight: 'bold' }}>Spending by City:</p>
-              {Object.entries(getCitySpendingBreakdown()).map(([cityName, amount]) => (
-                <p key={cityName} style={{ 
-                  margin: '3px 0', 
-                  fontSize: '14px',
-                  paddingLeft: '10px'
-                }}>
-                  <strong>{cityName}:</strong> ${amount.toFixed(2)}
-                </p>
-              ))}
-            </div>
-          )}
         </div>
         
-                <button 
-          id="submit" 
-          onClick={handleSubmit}
-        >
-          Finalize Trip
-          <div style={{ fontSize: '12px', marginTop: '5px' }}>
-            {totalDistance ? `Distance: ${totalDistance} km` : 'Distance: N/A'} | Food: ${totalCost.toFixed(2)}
-          </div>
+        {/* Back Button */}
+        <button 
+          className="second-button"
+          onClick={() => navigate('/trip')}>
+          ← Back to Trip Selection
         </button>
       </div>
       {/* END RIGHT SIDE */}

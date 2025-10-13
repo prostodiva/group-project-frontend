@@ -76,7 +76,7 @@ function SummaryPage() {
   }
     
   return (
-    <div>
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
         <div style={{ 
           backgroundColor: '#f5f5f5', 
           padding: '10px', 

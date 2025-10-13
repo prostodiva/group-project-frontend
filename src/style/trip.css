@@ -11,20 +11,55 @@ body {
     margin-top: 5px;
 }
 
-/* Styling for the starting location buttons */
-.london-button, .berlin-button, .paris-button, .custom-button {
-    margin: 35px;
-    width: 100px;
-    height: 30px;
-    border-radius: 10px;
-    border: var(--border-style);
-    box-shadow: var(--box-shadow);
-    background-color: var(--default-text-color);
+/* Container for trip option buttons */
+.trip-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    max-width: 400px; 
+    margin: 10px auto 0px;
+    gap: 20px 40px;
+    justify-items: center; 
+    align-items: center;
 }
 
-.london-button:hover, .berlin-button:hover, .paris-button:hover, .custom-button:hover {
+/* Tour Descriptions */
+.trip-des, .input-group {
     background-color: var(--secondary-brown);
+    padding: 15px;
+    border-radius: 8px;
+    border: 2px solid var(--dark-brown);
+    margin-bottom: 20px;
+    color: var(--dark-brown);
+}
+
+.trip-des > li {
+    margin: 0px 20px;
+    list-style-type: disc;
+    padding: 0px;
+    color: var(--dark-brown);
     font-weight: bold;
+}
+
+strong {
     font-style: italic;
+    font-weight: 800;
+}
+
+.back-button, .button-group input:nth-child(2) {
+    margin-left: auto;
+}
+
+.button-group {
+    display: flex;
+}
+
+.btn-city-list {
+    padding: 10px 15px;
     color: var(--default-text-color);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 16px;
 }

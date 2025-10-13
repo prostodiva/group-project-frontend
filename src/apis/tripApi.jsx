@@ -170,3 +170,17 @@ export const fetchTripData = async (tripId) => {
     throw error;
   }
 };
+
+// City Distance API
+export const cityDistance = async (fromCityId, toCityId) => {
+  try {
+    const response = await fetch(`/api/cities/distance?from=${fromCityId}&to=${toCityId}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch city distance: ${response.status} ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('City Distance API call failed:', error);
+    throw error;
+  }
+};

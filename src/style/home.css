@@ -9,32 +9,51 @@ button {
     text-decoration: none;
     display: inline-block;
     font-size: 16px;
-    margin: 10px 0px;
+    margin: 5px 0px;
     cursor: pointer;
     font-family: var(--body-font);
 }
 
-/* plain bg color above image */
-#container {
+.admin-panel {
     background-color: var(--background);
     padding: 0px 30px;
-    min-height: 100vh;
-    width: 500px;
     justify-content: center;
-    align-items: center;
+    align-items: stretch;
     display: flex;
     flex-direction: column;
-    border-width: 0px 15px;
+    border-width: 0px 0px 0px 10px;
     border-style: double;
     border-color: var(--dark-brown);
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 50vh;
+    height: 100vh;
+    background-color: var(--background);
+    padding: 20px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+}
+
+/* allows controls list to scroll */
+.control-container {
+  max-height: 75vh;
+  overflow-y: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  margin-top: 0px;
+  padding-right: 5px;
 }
 
 /* Create my trip button */
-#trip {
+.button {
     border: 2px solid var(--primary-brown);
     background-color: var(--secondary-brown);
     border-radius: 5px;
-    color: var(--default-text-color);
+    color: var(--dark-brown);
     padding: 10px 15px;
     text-align: left;
     text-decoration: none;
@@ -43,5 +62,16 @@ button {
     margin: 0px 0px 0px 10px;
     cursor: pointer;
     font-family: var(--body-font);
-    width: 30%;
 }
+
+/* Scrollbar styling (Firefox) */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--secondary-brown) var(--background);
+}
+
+/* Scrollbar styling (WebKit) */
+*::-webkit-scrollbar { width: 10px; }
+*::-webkit-scrollbar-track { background: var(--background); border-radius: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--secondary-brown); border-radius: 8px; border: 2px solid var(--background); }
+*::-webkit-scrollbar-thumb:hover { background: var(--primary-brown); }
