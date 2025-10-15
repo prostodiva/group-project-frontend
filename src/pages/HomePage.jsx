@@ -1,7 +1,7 @@
 // HomePage.jsx
 // Main page showing list of cities, admin functions
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { FaChevronDown, FaChevronUp, FaPlus, FaTrash, FaEdit, FaUser, FaEye, FaEyeSlash } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { citiesAPI } from "../apis/cityApis";
@@ -9,6 +9,7 @@ import { cityManagementAPI } from "../apis/tripApi";
 import { adminAPI } from "../apis/adminApi";
 import "../style/home.css";
 import { w } from "happy-dom/lib/PropertySymbol";
+import SearchableFoodSelect from "../components/SearchableFoodSelect";
 
 const HomePage = () => {
   const [cities, setCities] = useState([]);
@@ -19,7 +20,10 @@ const HomePage = () => {
   const [loadingFood, setLoadingFood] = useState(new Set());
 
   // Admin functionality
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    // Check localStorage for admin login flag
+    return localStorage.getItem('isAdmin') === 'true';
+  });
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminUsername, setAdminUsername] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -30,6 +34,7 @@ const HomePage = () => {
   // Admin operations
   const [showAddCity, setShowAddCity] = useState(false);
   const [newCityName, setNewCityName] = useState('');
+  const [newCityFile, setNewCityFile] = useState(null);
   const [showEditCity, setShowEditCity] = useState(false);
   const [editingCityId, setEditingCityId] = useState('');
   const [editingCityName, setEditingCityName] = useState('');
@@ -45,9 +50,20 @@ const HomePage = () => {
   const [editingFoodId, setEditingFoodId] = useState('');
   const [editingFoodName, setEditingFoodName] = useState('');
   const [editingFoodPrice, setEditingFoodPrice] = useState('');
+  const [editFoodFilter, setEditFoodFilter] = useState('');
+  const [editFoodInputFocused, setEditFoodInputFocused] = useState(false);
   const [showDeleteFood, setShowDeleteFood] = useState(false);
   const [deleteFoodId, setDeleteFoodId] = useState('');
   const [allFoods, setAllFoods] = useState([]);
+  // Remove old filter/focus state for delete food
+
+  // Search functionality
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchDropdown, setSearchDropdown] = useState([]);
+  const [searchSelected, setSearchSelected] = useState(null);
+  const [highlightedCityId, setHighlightedCityId] = useState(null);
+  const [highlightedFood, setHighlightedFood] = useState({ cityId: null, foodName: null });
+  const searchInputRef = useRef();
 
   useEffect(() => {
     const loadCitiesWithDistances = async () => {
@@ -66,6 +82,15 @@ const HomePage = () => {
           allCities = citiesData;
         }
         
+        // Log Stockholm and Vienna city objects for debug
+        const stockholm = allCities.find(city => city.name && city.name.toLowerCase() === 'stockholm');
+        if (stockholm) {
+          console.log('[DEBUG] Stockholm city object:', stockholm);
+        }
+        const vienna = allCities.find(city => city.name && city.name.toLowerCase() === 'vienna');
+        if (vienna) {
+          console.log('[DEBUG] Vienna city object:', vienna);
+        }
         // Get distances from Berlin
         let distancesFromBerlin = {};
         try {
@@ -107,10 +132,21 @@ const HomePage = () => {
         }
         
         // Add distances to all cities and sort by distance from Berlin
-        const citiesWithDistances = allCities.map(city => ({
-          ...city,
-          distance_from_berlin: distancesFromBerlin[city.id] || null
-        }));
+        const citiesWithDistances = allCities.map(city => {
+          let distance = distancesFromBerlin[city.id] || null;
+          if ((distance === null || distance === undefined) && Array.isArray(city.distances)) {
+            const toBerlin = city.distances.find(
+              d => (d.to && d.to.toLowerCase() === 'berlin')
+            );
+            if (toBerlin && typeof toBerlin.distance === 'number') {
+              distance = toBerlin.distance;
+            }
+          }
+          return {
+            ...city,
+            distance_from_berlin: distance
+          };
+        });
 
         // Separate Berlin from other cities
         const berlinCity = citiesWithDistances.find(city => 
@@ -151,7 +187,6 @@ const HomePage = () => {
   // Admin login function
   const handleAdminLogin = async () => {
     if (!adminUsername || !adminPassword) return;
-    
     setAdminLoading(true);
     try {
       const response = await adminAPI.login(adminUsername, adminPassword);
@@ -161,6 +196,8 @@ const HomePage = () => {
         setShowAdminMenu(true);
         setAdminUsername('');
         setAdminPassword('');
+        // Persist admin login
+        localStorage.setItem('isAdmin', 'true');
       }
     } catch (error) {
       console.error('Admin login failed:', error);
@@ -174,11 +211,14 @@ const HomePage = () => {
   const handleAdminLogout = async () => {
     try {
       await adminAPI.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
       setIsAdmin(false);
       setShowAdminMenu(false);
       setShowAdminLogin(false);
-    } catch (error) {
-      console.error('Logout error:', error);
+      // Remove admin login flag
+      localStorage.removeItem('isAdmin');
     }
   };
   // END handAdminLogout - admin functions
@@ -221,10 +261,24 @@ const HomePage = () => {
       }
       
       // Add distances to all cities and sort by distance from Berlin
-      const citiesWithDistances = allCities.map(city => ({
-        ...city,
-        distance_from_berlin: distancesFromBerlin[city.id] || null
-      }));
+      const citiesWithDistances = allCities.map(city => {
+        let distance = distancesFromBerlin[city.id] || null;
+        if ((distance === null || distance === undefined) && Array.isArray(city.distances)) {
+          const toBerlin = city.distances.find(
+            d => (d.to && d.to.toLowerCase() === 'berlin')
+          );
+          if (toBerlin && typeof toBerlin.distance === 'number') {
+            distance = toBerlin.distance;
+          } else {
+            // Debug log for missing Berlin distance
+            console.log('[DEBUG] No Berlin distance found for city:', city.name, city.distances, city);
+          }
+        }
+        return {
+          ...city,
+          distance_from_berlin: distance
+        };
+      });
 
       const berlinCity = citiesWithDistances.find(city => 
         city.name.toLowerCase() === 'berlin'
@@ -252,20 +306,29 @@ const HomePage = () => {
   // END refreshCitiesData - refresh cities function
 
 
-  // Add new city
+  // Add new city via JSON upload
   const handleAddCity = async () => {
-    if (!newCityName.trim()) return;
-    
+    if (!newCityFile) {
+      alert('Please choose a .json file first.');
+      return;
+    }
+    // Basic validation of file type/extension
+    const isJson = newCityFile.type === 'application/json' || newCityFile.name.toLowerCase().endsWith('.json');
+    if (!isJson) {
+      alert('Invalid file type. Please upload a .json file.');
+      return;
+    }
     setAdminLoading(true);
     try {
-      await adminAPI.addCity(newCityName);
+      await adminAPI.uploadCityJson(newCityFile);
       setNewCityName('');
+      setNewCityFile(null);
       setShowAddCity(false);
       // Refresh cities data without page reload
       await refreshCitiesData();
     } catch (error) {
-      console.error('Add city failed:', error);
-      alert('Failed to add city: ' + error.message);
+      console.error('Add city via JSON failed:', error);
+      alert('Failed to upload city JSON: ' + error.message);
     } finally {
       setAdminLoading(false);
     }
@@ -306,6 +369,17 @@ const HomePage = () => {
       setShowDeleteCity(false);
       // Refresh cities data without page reload
       await refreshCitiesData();
+      const cid = parseInt(deleteCityId);
+      setCityFoods(prev => {
+        const next = { ...prev };
+        delete next[cid];
+        return next;
+      });
+      setExpandedCities(prev => {
+        const next = new Set(prev);
+        next.delete(cid);
+        return next;
+      });
     } catch (error) {
       console.error('Delete city failed:', error);
       alert('Failed to delete city: ' + error.message);
@@ -320,12 +394,22 @@ const HomePage = () => {
     
     setAdminLoading(true);
     try {
-      await adminAPI.addFood(parseInt(foodCityId), newFoodName, parseFloat(newFoodPrice));
+      const cid = parseInt(foodCityId);
+      await adminAPI.addFood(cid, newFoodName, parseFloat(newFoodPrice));
       setFoodCityId('');
       setNewFoodName('');
       setNewFoodPrice('');
       setShowAddFood(false);
       await refreshCitiesData();
+      if (expandedCities.has(cid)) {
+        await refreshCityFood(cid);
+      } else {
+        setCityFoods(prev => {
+          const next = { ...prev };
+          delete next[cid];
+          return next;
+        });
+      }
     } catch (error) {
       console.error('Add food failed:', error);
       alert('Failed to add food: ' + error.message);
@@ -350,6 +434,19 @@ const HomePage = () => {
       setEditingFoodPrice('');
       setShowEditFood(false);
       await refreshCitiesData();
+      const match = allFoods.find(f => f.id === parseInt(editingFoodId));
+      const cid = match ? (match.city_id || match.cityId) : null;
+      if (cid) {
+        if (expandedCities.has(cid)) {
+          await refreshCityFood(cid);
+        } else {
+          setCityFoods(prev => {
+            const next = { ...prev };
+            delete next[cid];
+            return next;
+          });
+        }
+      }
     } catch (error) {
       console.error('Edit food failed:', error);
       alert('Failed to edit food: ' + error.message);
@@ -372,6 +469,19 @@ const HomePage = () => {
       setDeleteFoodId('');
       setShowDeleteFood(false);
       await refreshCitiesData();
+      const match = allFoods.find(f => f.id === parseInt(deleteFoodId));
+      const cid = match ? (match.city_id || match.cityId) : null;
+      if (cid) {
+        if (expandedCities.has(cid)) {
+          await refreshCityFood(cid);
+        } else {
+          setCityFoods(prev => {
+            const next = { ...prev };
+            delete next[cid];
+            return next;
+          });
+        }
+      }
     } catch (error) {
       console.error('Delete food failed:', error);
       alert('Failed to delete food: ' + error.message);
@@ -387,6 +497,34 @@ const HomePage = () => {
       setAllFoods(foodsData.foods || foodsData || []);
     } catch (error) {
       console.error('Failed to load foods:', error);
+    }
+  };
+
+  // Refresh a single city's food list to reflect latest changes immediately
+  const refreshCityFood = async (cityId) => {
+    if (!cityId) return;
+    try {
+      setLoadingFood(prev => new Set(prev).add(cityId));
+      const foodData = await citiesAPI.getCityFood(cityId);
+      let foods = [];
+      if (Array.isArray(foodData)) {
+        foods = foodData;
+      } else if (foodData.foods && Array.isArray(foodData.foods)) {
+        foods = foodData.foods;
+      } else if (foodData.food && Array.isArray(foodData.food)) {
+        foods = foodData.food;
+      } else if (foodData.data && Array.isArray(foodData.data)) {
+        foods = foodData.data;
+      }
+      setCityFoods(prev => ({ ...prev, [cityId]: foods }));
+    } catch (error) {
+      console.error(`Failed to refresh food for city ${cityId}:`, error);
+    } finally {
+      setLoadingFood(prev => {
+        const next = new Set(prev);
+        next.delete(cityId);
+        return next;
+      });
     }
   };
 
@@ -444,7 +582,114 @@ const HomePage = () => {
     if (city.name.toLowerCase() === 'berlin') {
       return 0;
     }
-    return city.distance_from_berlin !== undefined ? city.distance_from_berlin : null;
+    // Prefer distance_from_berlin if present and not null
+    if (city.distance_from_berlin !== undefined && city.distance_from_berlin !== null) {
+      return city.distance_from_berlin;
+    }
+    // Fallback: check city.distances array for a distance to Berlin by name
+    if (Array.isArray(city.distances)) {
+      const toBerlin = city.distances.find(
+        d => (d.to && d.to.toLowerCase() === 'berlin')
+      );
+      if (toBerlin && typeof toBerlin.distance === 'number') {
+        return toBerlin.distance;
+      }
+    }
+    return null;
+  };
+
+  // Build dropdown options as user types (match DashboardPage logic)
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setSearchDropdown([]);
+      setSearchSelected(null);
+      return;
+    }
+    const term = searchTerm.trim().toLowerCase();
+    // Cities
+    const cityOptions = cities
+      .filter(city => city.name.toLowerCase().includes(term))
+      .map(city => ({
+        type: 'city',
+        id: city.id,
+        label: `City: ${city.name}`,
+        cityName: city.name
+      }));
+    // Foods
+    let foodOptions = [];
+    cities.forEach(city => {
+      const foods = cityFoods[city.id] || [];
+      foods.forEach(food => {
+        if ((food.name || '').toLowerCase().includes(term)) {
+          foodOptions.push({
+            type: 'food',
+            id: food.id,
+            label: `Food: ${food.name} (${city.name})`,
+            cityId: city.id,
+            foodName: food.name
+          });
+        }
+      });
+    });
+    setSearchDropdown([...cityOptions, ...foodOptions]);
+    setSearchSelected(null);
+  }, [searchTerm, cities, cityFoods]);
+
+  // Handle search form submit (match DashboardPage logic)
+  const handleSearch = (e) => {
+    e.preventDefault();
+    let target = searchSelected || searchDropdown[0];
+    const term = (searchTerm || '').trim().toLowerCase();
+
+    // Fallback: if no dropdown target, try to find city/food by typed text
+    if (!target && term) {
+      const cityMatch = cities.find(c => c.name.toLowerCase().includes(term));
+      if (cityMatch) {
+        target = { type: 'city', id: cityMatch.id };
+      } else {
+        // search foods across available data
+        for (const city of cities) {
+          const foods = cityFoods[city.id] || [];
+          const foodMatch = foods.find(f => (f.name || '').toLowerCase().includes(term));
+          if (foodMatch) {
+            target = { type: 'food', cityId: city.id, foodName: foodMatch.name };
+            break;
+          }
+        }
+      }
+    }
+
+    if (!target) return;
+
+    if (target.type === 'city') {
+      setExpandedCities(prev => {
+        const newSet = new Set(prev);
+        newSet.add(target.id);
+        return newSet;
+      });
+      setTimeout(() => {
+        const cityElement = document.getElementById(`city-${target.id}`);
+        if (cityElement) {
+          cityElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        setHighlightedCityId(target.id);
+        setTimeout(() => setHighlightedCityId(null), 1800);
+      }, 100);
+    } else if (target.type === 'food') {
+      setExpandedCities(prev => {
+        const newSet = new Set(prev);
+        newSet.add(target.cityId);
+        return newSet;
+      });
+      setTimeout(() => {
+        const cityElement = document.getElementById(`city-${target.cityId}`);
+        if (cityElement) {
+          cityElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        setHighlightedFood({ cityId: target.cityId, foodName: target.foodName });
+        setTimeout(() => setHighlightedFood({ cityId: null, foodName: null }), 1800);
+      }, 100);
+    }
   };
 
   // Helper function to format distance
@@ -499,6 +744,55 @@ const HomePage = () => {
           
         </div>
 
+        {/* Search Feature (match DashboardPage) */}
+        <div style={{ padding: '5px 20px', borderBottom: '1px solid var(--dark-brown)' }}>
+          <form onSubmit={handleSearch} style={{ display: 'flex', gap: '10px', alignItems: 'center' }} autoComplete="off">
+            <div className="sub-header" 
+              style={{ marginRight: '10px', fontSize: '14px', whiteSpace: 'nowrap' }}
+            >Search City or Food:</div>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Type city or food name..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                style={{ width: '100%' }}
+                onFocus={() => setSearchDropdown(searchDropdown)}
+                autoComplete="off"
+              />
+              {searchDropdown.length > 0 && (
+                <div className="dropdown">
+                  {searchDropdown.map((item, idx) => (
+                    <div
+                      key={item.type + '-' + item.id + '-' + (item.cityId || '')}
+                      onMouseDown={() => {
+                        setSearchSelected(item);
+                        setSearchTerm(item.type === 'city' ? item.cityName : item.foodName);
+                        setTimeout(() => setSearchDropdown([]), 100);
+                      }}
+                      style={{
+                        padding: '8px',
+                        cursor: 'pointer',
+                        background: searchSelected && searchSelected.id === item.id && searchSelected.type === item.type ? 'var(--primary-brown)' : 'transparent'
+                      }}
+                    >
+                      {item.label}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              type="submit"
+              style={{ width: 'auto', borderRadius: '5px' }}
+            >
+              Find
+            </button>
+          </form>
+        </div>
+
+        
         {/* Admin login popup */}
         {showAdminLogin && !isAdmin && (
           <div className="container" style={{
@@ -589,7 +883,7 @@ const HomePage = () => {
         )}
       
       {/* Cities list */}
-      <div className="cities-result">
+      <div className="cities-result" style={{ maxHeight: '67vh'}}>
         {cities.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '20px' }}>
             No cities available
@@ -598,7 +892,16 @@ const HomePage = () => {
           cities.map((city) => {
             const distanceFromBerlin = getDistanceFromBerlin(city);
             return (
-              <div key={city.id}>
+              <div 
+                key={city.id} 
+                id={`city-${city.id}`} 
+                style={{
+                  transition: 'background-color 0.5s ease',
+                  backgroundColor: highlightedCityId === city.id ? 'var(--secondary-brown)' : 'transparent',
+                  borderRadius: highlightedCityId === city.id ? '8px' : '0',
+                  padding: highlightedCityId === city.id ? '5px' : '0'
+                }}
+              >
 
                 {/* City button */}
                 <button 
@@ -635,7 +938,15 @@ const HomePage = () => {
                       // List food items
                       <ul style={{ listStyle: 'none', padding: 0 }}>
                         {cityFoods[city.id].map((food, index) => (
-                          <li key={index} className="food-name">
+                          <li 
+                            key={index} 
+                            className="food-name"
+                            id={`food-${city.id}-${(food.name || food.title || food.foodName || 'unknown').replace(/\s+/g, '-')}`}
+                            style={{
+                              transition: 'background-color 0.3s',
+                              backgroundColor: highlightedFood.cityId === city.id && highlightedFood.foodName === (food.name || food.title || food.foodName) ? '#fff3cd' : 'transparent'
+                            }}
+                          >
                             {typeof food === 'string' ? (
                               food
                             ) : (
@@ -693,12 +1004,12 @@ const HomePage = () => {
               </button>
               
               {showAddCity && (
-                <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '4px', border: '1px solid #dee2e6' }}>
+                <div className="control-group">
                   <input
-                    type="text"
-                    placeholder="City name"
-                    value={newCityName}
-                    onChange={(e) => setNewCityName(e.target.value)}
+                    type="file"
+                    accept=".json,application/json"
+                    placeholder="City JSON file"
+                    onChange={(e) => setNewCityFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
                     style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
                   />
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -727,7 +1038,7 @@ const HomePage = () => {
               </button>
               
               {showEditCity && (
-                <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '4px', border: '1px solid #dee2e6' }}>
+                <div className="control-group">
                   <select
                     value={editingCityId}
                     onChange={(e) => setEditingCityId(e.target.value)}
@@ -774,7 +1085,7 @@ const HomePage = () => {
               </button>
               
               {showDeleteCity && (
-                <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '4px', border: '1px solid #dee2e6' }}>
+                <div className="control-group">
                   <select
                     value={deleteCityId}
                     onChange={(e) => setDeleteCityId(e.target.value)}
@@ -816,7 +1127,7 @@ const HomePage = () => {
               </button>
               
               {showAddFood && (
-                <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '4px', border: '1px solid #dee2e6' }}>
+                <div className="control-group">
                   <select
                     value={foodCityId}
                     onChange={(e) => setFoodCityId(e.target.value)}
@@ -871,21 +1182,20 @@ const HomePage = () => {
               >
                 <FaEdit /> Edit Food
               </button>
-              
               {showEditFood && (
-                <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '4px', border: '1px solid #dee2e6' }}>
-                  <select
+                <div className="control-group">
+                  <SearchableFoodSelect className="dropdown"
+                    items={allFoods}
+                    cities={cities}
                     value={editingFoodId}
-                    onChange={(e) => setEditingFoodId(e.target.value)}
-                    style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
-                  >
-                    <option value="">Select food to edit</option>
-                    {allFoods.map(food => (
-                      <option key={food.id} value={food.id}>
-                        ID {food.id}: {food.name} (${food.price})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(id, item) => {
+                      setEditingFoodId(id);
+                    }}
+                    getLabel={food => `ID ${food.id}: ${food.name} ($${food.price})`}
+                    getId={food => food.id}
+                    getCityId={food => food.city_id || food.cityId}
+                    placeholder="Type food name, ID, or city"
+                  />
                   <input
                     type="text"
                     placeholder="New food name (optional)"
@@ -904,7 +1214,7 @@ const HomePage = () => {
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button 
                       onClick={handleEditFood}
-                      disabled={adminLoading}
+                      disabled={adminLoading || !editingFoodId}
                       className="button" style={{ margin: 0, flex: 1 }}>
                       Update
                     </button>
@@ -928,25 +1238,24 @@ const HomePage = () => {
               >
                 <FaTrash /> Delete Food
               </button>
-              
               {showDeleteFood && (
-                <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '4px', border: '1px solid #dee2e6' }}>
-                  <select
+                <div className="control-group"> 
+                  <SearchableFoodSelect className="dropdown"
+                    items={allFoods}
+                    cities={cities}
                     value={deleteFoodId}
-                    onChange={(e) => setDeleteFoodId(e.target.value)}
-                    style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
-                  >
-                    <option value="">Select food to delete</option>
-                    {allFoods.map(food => (
-                      <option key={food.id} value={food.id}>
-                        ID {food.id}: {food.name} (${food.price})
-                      </option>
-                    ))}
-                  </select>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                    onChange={(id, item) => {
+                      setDeleteFoodId(id);
+                    }}
+                    getLabel={food => `ID ${food.id}: ${food.name} ($${food.price})`}
+                    getId={food => food.id}
+                    getCityId={food => food.city_id || food.cityId}
+                    placeholder="Type food name, ID, or city"
+                  />
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                     <button 
                       onClick={handleDeleteFood}
-                      disabled={adminLoading}
+                      disabled={adminLoading || !deleteFoodId}
                       className="button" style={{ margin: 0, flex: 1 }}>
                       Delete
                     </button>

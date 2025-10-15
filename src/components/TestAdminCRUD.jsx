@@ -1,3 +1,7 @@
+// TestAdminCRUD.jsx
+// for testing admin CRUD operations before implementing to DashboardPage
+// this file can be ignored or deleted but keeping for now in case needed later
+
 import { useState } from 'react';
 import { adminAPI } from '../apis/adminApi';
 
@@ -28,6 +32,9 @@ const TestAdminCRUD = () => {
   const [updateFoodName, setUpdateFoodName] = useState('');
   const [updateFoodPrice, setUpdateFoodPrice] = useState('');
   const [deleteFoodId, setDeleteFoodId] = useState('');
+  
+  // Upload city JSON
+  const [uploadFile, setUploadFile] = useState(null);
 
   const setResultWithLog = (message) => {
     console.log(message);
@@ -239,6 +246,42 @@ const TestAdminCRUD = () => {
       setResultWithLog('✅ Data refreshed successfully');
     } catch (error) {
       setResultWithLog(`❌ Refresh Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Upload city JSON file -> /api/admin/upload-city (multipart, field: cityData)
+  const handleUploadCityFile = async () => {
+    if (!isLoggedIn) {
+      setResultWithLog('❌ Please login first to upload city data');
+      return;
+    }
+    if (!uploadFile) {
+      setResultWithLog('❌ Please choose a .json file first');
+      return;
+    }
+    try {
+      setLoading(true);
+      const form = new FormData();
+      form.append('cityData', uploadFile, uploadFile.name);
+      const res = await fetch('/api/admin/upload-city', {
+        method: 'POST',
+        credentials: 'include',
+        body: form,
+      });
+      const text = await res.text();
+      // Try to parse JSON for nicer display
+      try {
+        const json = JSON.parse(text);
+        const prefix = res.ok ? '✅ Upload Success' : '❌ Upload Failed';
+        setResultWithLog(`${prefix} (HTTP ${res.status})\n` + JSON.stringify(json, null, 2));
+      } catch {
+        const prefix = res.ok ? '✅ Upload Success' : '❌ Upload Failed';
+        setResultWithLog(`${prefix} (HTTP ${res.status})\n${text}`);
+      }
+    } catch (err) {
+      setResultWithLog(`❌ Upload Error: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -562,6 +605,31 @@ const TestAdminCRUD = () => {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Import Cities (JSON) */}
+      <div style={{ marginBottom: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: 'white' }}>
+        <h3>📦 Import Cities from JSON</h3>
+        <p style={{ marginTop: 0, color: '#6c757d' }}>Upload a JSON file with a top-level "cities" array. Field name expected: <code>cityData</code>.</p>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <input
+            type="file"
+            accept=".json,application/json"
+            onChange={(e) => setUploadFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
+          />
+          <button
+            onClick={handleUploadCityFile}
+            disabled={loading || !isLoggedIn}
+            style={{ padding: '8px 16px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}
+          >
+            ⬆️ Upload JSON
+          </button>
+        </div>
+        {uploadFile && (
+          <div style={{ marginTop: '8px', color: '#6c757d' }}>
+            Selected: {uploadFile.name} ({Math.ceil(uploadFile.size / 1024)} KB)
+          </div>
+        )}
       </div>
 
       {/* Results */}

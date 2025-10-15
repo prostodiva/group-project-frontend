@@ -88,6 +88,22 @@ export const adminAPI = {
     return await response.json();
   },
 
+  // Upload city JSON file (admin only)
+  uploadCityJson: async (file) => {
+    const formData = new FormData();
+    formData.append('cityData', file);
+    const response = await fetch('/api/admin/upload-city', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Upload city JSON failed: ${response.status} ${response.statusText} - ${text}`);
+    }
+    return await response.json();
+  },
+
   // Update city name (admin only)
   updateCity: async (cityId, newName) => {
     const response = await fetch(`/api/admin/cities/${cityId}`, {

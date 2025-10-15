@@ -19,6 +19,27 @@ const TripPage = () => {
   const [selectedCities, setSelectedCities] = useState([]);
   const [customTripMode, setCustomTripMode] = useState('11cities');
   const [numberOfCities, setNumberOfCities] = useState('');
+  const [quickAddCity, setQuickAddCity] = useState('');
+  const [quickAddDropdownOpen, setQuickAddDropdownOpen] = useState(false);
+  const quickAddInputRef = useState(null);
+
+  // Filter available cities for dropdown (not already selected)
+  const filteredQuickAddCities = availableCities.filter(city =>
+    !selectedCities.includes(city.name) &&
+    (quickAddCity.trim() === '' || city.name.toLowerCase().includes(quickAddCity.trim().toLowerCase()))
+  );
+
+  // Handle quick add city input change
+  const handleQuickAddCity = () => {
+    const match = availableCities.find(
+      city => city.name.toLowerCase() === quickAddCity.trim().toLowerCase() && !selectedCities.includes(city.name)
+    );
+    if (match) {
+      setSelectedCities([...selectedCities, match.name]);
+      setQuickAddCity('');
+      setQuickAddDropdownOpen(false);
+    }
+  };
 
   // Load cities when component mounts
   useEffect(() => {
@@ -86,11 +107,11 @@ const TripPage = () => {
 
   // London Handler
   const handleLondonTour = async () => {
-    if (!numberOfCities || numberOfCities < 1 || numberOfCities > 11) {
-      alert('Please enter a valid number of cities (1-11)');
+    const maxCities = availableCities.length;
+    if (!numberOfCities || numberOfCities < 1 || numberOfCities > maxCities) {
+      alert(`Please enter a valid number of cities (1-${maxCities})`);
       return;
     }
-    
     setIsLoading(true);
     try {
       const tripData = await tripAPI.planLondonTour(parseInt(numberOfCities));
@@ -164,23 +185,9 @@ const TripPage = () => {
   };
 
 
-  // Get cities based on selected mode
+  // Get all available cities not already selected
   const getAvailableCitiesForMode = () => {
-    // Start with the appropriate city set based on mode
-    const baseList = customTripMode === '11cities'
-      ? availableCities.filter(city => city.id !== 12 && city.id !== 13) // Exclude Vienna (13) and Stockholm (12)
-      : availableCities;
-
-    // Exclude any cities already selected to avoid duplicates across lists
-    return baseList.filter(city => !selectedCities.includes(city.name));
-  };
-
-
-  // Reset selections when mode changes
-  const handleModeChange = (mode) => {
-    setCustomTripMode(mode);
-    setCustomStartCity('');
-    setSelectedCities([]);
+    return availableCities.filter(city => !selectedCities.includes(city.name));
   };
 
   // Toggle city selection for custom tour
@@ -254,12 +261,12 @@ const TripPage = () => {
           <h3>Paris Tour Description</h3>
            <ul className="trip-des"style={{ lineHeight: '1.6' }}>
               <li><strong>Starting Point:</strong> Paris</li>
-              <li><strong>Cities to Visit:</strong> All 11 European cities</li>
+              <li><strong>Cities to Visit:</strong> All {availableCities.length} European cities</li>
             </ul>
           <div className="button-group">
             <Input
               type="button"
-              value="Start Paris Tour (All 11 Cities)"
+              value="Start Paris Tour"
               onClick={handleParisTour}
               disabled={isLoading}
             />
@@ -282,10 +289,10 @@ const TripPage = () => {
             <input
               type="number"
               min="1"
-              max="11"
+              max={availableCities.length}
               value={numberOfCities}
               onChange={(e) => setNumberOfCities(e.target.value)}
-              placeholder="Enter number (1-11)"
+              placeholder={`Enter number (1-${availableCities.length})`}
             />
           </div>
           <div className="button-group">
@@ -312,7 +319,7 @@ const TripPage = () => {
           <h3>Berlin Tour Description</h3>
           <ul className="trip-des">
               <li><strong>Starting Point:</strong> Berlin</li>
-              <li><strong>Cities to Visit:</strong> All 13 European cities</li>
+              <li><strong>Cities to Visit:</strong> All {availableCities.length} European cities</li>
           </ul>
           <div className="button-group">
             <Input
@@ -336,35 +343,67 @@ const TripPage = () => {
         <div style={{ display: 'flex', height: '100vh' }}>
           {/* LEFT SIDE - LIST OF CITIES */}
           <div id="leftBG">
-            <div className="header">List of Cities</div>
+            <div className="title">List of Cities</div>
+
+            { /* Quick Add Section */}
+            <div style={{ display: 'flex', 
+                          gap: '10px', 
+                          alignItems: 'center', 
+                          borderBottom: '2px solid var(--dark-brown)', 
+                          paddingBottom: '5px', 
+                          marginBottom: '10px' }}>
             
-            {/* City Mode Selection */}
-            <div style={{ marginBottom: '10px' }}>
-              <div style={{ marginBottom: '10px' }}>
-                <label className="sub-header">Choose City Set:</label>
-              </div>
+              <div className="sub-header" 
+                style={{ marginRight: '10px', fontSize: '14px', whiteSpace: 'nowrap' }}
+              >Quick Add City:</div>
 
-              { /* City Set Buttons - 11 or 13 */ }
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button 
-                  className="btn-city-list"
-                  onClick={() => handleModeChange('11cities')}
-                  style={{ backgroundColor: customTripMode === '11cities' ? '#9c7e70' : '#c3b1a5' }}
-                >
-                  11 Cities
-                </button>
-                <button 
-                  className="btn-city-list"
-                  onClick={() => handleModeChange('13cities')}
-                  style={{ backgroundColor: customTripMode === '13cities' ? '#9c7e70' : '#c3b1a5' }}
-                >
-                  13 Cities
-                </button>
+              {/* Quick Add City (Dropdown/Autocomplete) */}
+              <div className="quick-add-city" style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  placeholder="Add city..."
+                  value={quickAddCity}
+                  ref={quickAddInputRef}
+                  onFocus={() => setQuickAddDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setQuickAddDropdownOpen(false), 150)}
+                  onChange={e => {
+                    setQuickAddCity(e.target.value);
+                    setQuickAddDropdownOpen(true);
+                  }}
+                  autoComplete="off"
+                />
+                
+                {quickAddDropdownOpen && filteredQuickAddCities.length > 0 && (
+                  <div className="dropdown">
+                    {filteredQuickAddCities.map(city => (
+                      <div
+                        key={city.id}
+                        onMouseDown={() => {
+                          setQuickAddCity(city.name);
+                          setQuickAddDropdownOpen(false);
+                        }}
+                        style={{
+                          padding: '8px',
+                          cursor: 'pointer',
+                          background: 'transparent'
+                        }}
+                      >
+                        {city.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              { /* END City Set Buttons - 11 or 13 */ }
+              {/* END Quick Add City */}
 
+              <button onClick={handleQuickAddCity} style={{ width: 'auto', borderRadius: '5px' }}>Add</button>
+            
             </div>
+            { /* END Quick Add Section */ }
             
+
+
+            {/* City Mode Selection */}
             <div className="cities-list">
               {getAvailableCitiesForMode().map(city => (
                 <div key={city.id} className="city-row">
